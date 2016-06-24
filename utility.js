@@ -664,7 +664,7 @@ function convertBase(str, fromBase, toBase) {
 function parseToDigitsArray(str, base) {
   var digits = str.split('');
   var ary = [];
-  for (var i = digits.length-1; i >= 0; i) {
+  for (var i = digits.length-1; i >= 0; i--) {
     var n = parseInt(digits[i], base);
     if (isNaN(n)) return null;
     ary.push(n);
