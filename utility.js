@@ -697,7 +697,6 @@ function add(x, y, base) {
 function multiplyByNumber(num, x, base) {
   if (num < 0) return null;
   if (num == 0) return [];
-
   var result = [];
   var power = x;
   while (true) {
@@ -708,8 +707,11 @@ function multiplyByNumber(num, x, base) {
     if (num === 0) break;
     power = add(power, power, base);
   }
-
   return result;
+}
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
 }
 
 if (!Object.prototype.find) {
@@ -823,3 +825,4 @@ exports.weiToEth = weiToEth;
 exports.ethToWei = ethToWei;
 exports.loadContract = loadContract;
 exports.deployContract = deployContract;
+exports.getRandomInt = getRandomInt;
