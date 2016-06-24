@@ -382,7 +382,13 @@ function getBalance(web3, address, callback) {
   }
   try {
     if (web3.currentProvider) {
-      callback(undefined, web3.eth.getBalance(address));
+      web3.eth.getBalance(address, function(err, balance){
+        if (!err) {
+          callback(undefined, balance);
+        } else {
+          callback(err, undefined);
+        }
+      });
     } else {
       proxy();
     }
