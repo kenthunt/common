@@ -793,6 +793,8 @@ Array.prototype.equals = function(b) {
   return true;
 }
 
+exports.decToHex = decToHex;
+exports.hexToDec = hexToDec;
 exports.pack = pack;
 exports.unpack = unpack;
 exports.getBalance = getBalance;
