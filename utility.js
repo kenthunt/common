@@ -654,7 +654,7 @@ function convertBase(str, fromBase, toBase) {
     power = multiplyByNumber(fromBase, power, toBase);
   }
   var out = '';
-  for (var i = outArray.length-1; i >= 0; i) {
+  for (var i = outArray.length-1; i >= 0; i--) {
     out += outArray[i].toString(toBase);
   }
   if (out=='') out = 0;
