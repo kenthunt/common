@@ -22,21 +22,35 @@ function ethToWei(eth) {
 }
 
 function readFile(filename, callback) {
-  fs.readFile(filename,{ encoding: 'utf8' }, function(err, data) {
-    if (!err) {
-      callback(undefined, data);
+  try {
+    if (typeof(window) === 'undefined') {
+      fs.readFile(filename,{ encoding: 'utf8' }, function(err, data) {
+        if (err) {
+          callback(err, undefined);
+        } else {
+          callback(undefined, data);
+        }
+      });
     } else {
-      callback(err, undefined);
+      request.get(config.homeURL+"/"+filename, function(err, httpResponse, body){
+        if (err) {
+          callback(err, undefined);
+        } else {
+          callback(undefined, body);
+        }
+      });
     }
-  });
+  } catch (err) {
+    callback(err, undefined);
+  }
 }
 
-function writeFile(filename, data, callback) {
+function writeFile(filename, data) {
   fs.writeFile(filename, data, function(err) {
     if(err) {
       callback(err, false);
     } else {
-      callback(err, true);
+      callback(undefined, true);
     }
 	});
 }
