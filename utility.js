@@ -823,7 +823,7 @@ Array.prototype.equals = function(b) {
 
 exports.decToHex = decToHex;
 exports.hexToDec = hexToDec;
-exorts.roundToNearest = roundToNearest;
+exports.roundToNearest = roundToNearest;
 exports.pack = pack;
 exports.unpack = unpack;
 exports.getBalance = getBalance;
