@@ -526,8 +526,6 @@ function sign(web3, address, value, privateKey, callback) {
     }
   } else {
     web3.eth.sign(address, value, function(err, sig) {
-      console.log(err, sig);
-      console.log(sig.slice(0, 66));
       try {
         var r = sig.slice(0, 66);
         var s = '0x' + sig.slice(66, 130);
@@ -548,7 +546,11 @@ function verify(web3, address, v, r, s, value, callback) {
   if (value.substring(0,2)=='0x') value=value.substring(2,value.length);
   var pubKey = ethUtil.ecrecover(new Buffer(value, 'hex'), Number(v), new Buffer(r, 'hex'), new Buffer(s, 'hex'));
   var result = address == '0x'+ethUtil.pubToAddress(new Buffer(pubKey, 'hex')).toString('hex');
-  callback(undefined, result);
+  if (callback) {
+    callback(undefined, result);
+  } else {
+    return result;
+  }
 }
 
 function createAccount() {
