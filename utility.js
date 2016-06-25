@@ -27,26 +27,34 @@ function roundToNearest(numToRound, numToRoundTo) {
 }
 
 function readFile(filename, callback) {
-  try {
-    if (typeof(window) === 'undefined') {
-      fs.readFile(filename,{ encoding: 'utf8' }, function(err, data) {
-        if (err) {
-          callback(err, undefined);
-        } else {
-          callback(undefined, data);
-        }
-      });
-    } else {
-      request.get(config.homeURL+"/"+filename, function(err, httpResponse, body){
-        if (err) {
-          callback(err, undefined);
-        } else {
-          callback(undefined, body);
-        }
-      });
+  if (callback) {
+    try {
+      if (typeof(window) === 'undefined') {
+        fs.readFile(filename,{ encoding: 'utf8' }, function(err, data) {
+          if (err) {
+            callback(err, undefined);
+          } else {
+            callback(undefined, data);
+          }
+        });
+      } else {
+        request.get(config.homeURL+"/"+filename, function(err, httpResponse, body){
+          if (err) {
+            callback(err, undefined);
+          } else {
+            callback(undefined, body);
+          }
+        });
+      }
+    } catch (err) {
+      callback(err, undefined);
     }
-  } catch (err) {
-    callback(err, undefined);
+  } else {
+    try {
+      return fs.readFileSync(filename,{ encoding: 'utf8' });
+    } catch (err) {
+      return undefined;
+    }
   }
 }
 
