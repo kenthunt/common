@@ -526,8 +526,6 @@ function sign(web3, address, value, privateKey, callback) {
     }
   } else {
     web3.eth.sign(address, value, function(err, sig) {
-      console.log('err '+err);
-      console.log('sig '+sig);
       try {
         var r = sig.slice(0, 66);
         var s = '0x' + sig.slice(66, 130);
