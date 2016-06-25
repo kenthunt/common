@@ -21,6 +21,11 @@ function ethToWei(eth) {
   return parseFloat((eth*1000000000000000000).toPrecision(10));
 }
 
+function roundToNearest(numToRound, numToRoundTo) {
+    numToRoundTo = 1 / (numToRoundTo);
+    return Math.round(numToRound * numToRoundTo) / numToRoundTo;
+}
+
 function readFile(filename, callback) {
   try {
     if (typeof(window) === 'undefined') {
@@ -818,6 +823,7 @@ Array.prototype.equals = function(b) {
 
 exports.decToHex = decToHex;
 exports.hexToDec = hexToDec;
+exorts.roundToNearest = roundToNearest;
 exports.pack = pack;
 exports.unpack = unpack;
 exports.getBalance = getBalance;
