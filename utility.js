@@ -412,7 +412,7 @@ function getBalance(web3, address, callback) {
         if (!err) {
           callback(undefined, balance);
         } else {
-          callback(err, undefined);
+          proxy();
         }
       });
     } else {
