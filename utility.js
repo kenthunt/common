@@ -308,7 +308,7 @@ function estimateGas(web3, contract, address, functionName, args, fromAddress, p
 
 function txReceipt(web3, txHash, callback) {
   function proxy(){
-    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=proxy&action=ethGetTransactionReceipt&txhash='+txHash;
+    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=proxy&action=eth_GetTransactionReceipt&txhash='+txHash;
     request.get(url, function(err, httpResponse, body){
       if (!err) {
         result = JSON.parse(body);
@@ -417,7 +417,7 @@ function getBalance(web3, address, callback) {
 
 function getNextNonce(web3, address, callback) {
   function proxy(){
-    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=proxy&action=ethGetTransactionCount&address='+address+'&tag=latest';
+    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=proxy&action=eth_GetTransactionCount&address='+address+'&tag=latest';
     request.get(url, function(err, httpResponse, body){
       if (!err) {
         result = JSON.parse(body);
@@ -443,7 +443,7 @@ function getNextNonce(web3, address, callback) {
 
 function blockNumber(web3, callback) {
   function proxy() {
-    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=proxy&action=ethBlockNumber';
+    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=proxy&action=eth_BlockNumber';
     request.get(url, function(err, httpResponse, body){
       if (!err) {
         var result = JSON.parse(body);
