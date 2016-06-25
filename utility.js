@@ -1,4 +1,4 @@
-var config = (typeof(global.config) == 'undefined' && typeof(config) == 'undefined') ? require('../config.js') : global.config;
+var config = (typeof(global.config) == 'undefined' && typeof(config) == 'undefined') ? require('./config.js') : global.config;
 var fs = require('fs');
 var request = require('request');
 var async = (typeof(window) === 'undefined') ? require('async') : require('async/dist/async.min.js');
@@ -12,7 +12,6 @@ var Tx = require('ethereumjs-tx');
 var keythereum = require('keythereum');
 var ethUtil = require('ethereumjs-util');
 var BigNumber = require('bignumber.js');
-var solc = require('solc');
 
 function weiToEth(wei) {
   return (wei/1000000000000000000).toFixed(3);
@@ -566,9 +565,11 @@ function deployContract(web3, sourceFile, contractName, constructorParams, addre
           abi = JSON.parse(abi);
           bytecode = JSON.parse(bytecode);
         } else {
-          var compiled = solc.compile(source, 1).contracts[contractName];
-          abi = JSON.parse(compiled.interface);
-          bytecode = compiled.bytecode;
+          callback('Could not load bytecode and ABI', undefined)
+          // var solc = require('solc');
+          // var compiled = solc.compile(source, 1).contracts[contractName];
+          // abi = JSON.parse(compiled.interface);
+          // bytecode = compiled.bytecode;
         }
         var contract = web3.eth.contract(abi);
         utility.testSend(web3, contract, undefined, 'constructor', constructorParams.concat([{from: address, data: bytecode}]), address, undefined, 0, function(err, result) {
