@@ -50,7 +50,7 @@ function readFile(filename, callback) {
   }
 }
 
-function writeFile(filename, data) {
+function writeFile(filename, data, callback) {
   fs.writeFile(filename, data, function(err) {
     if(err) {
       callback(err, false);
