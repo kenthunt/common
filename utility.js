@@ -880,6 +880,7 @@ exports.roundToNearest = roundToNearest;
 exports.pack = pack;
 exports.unpack = unpack;
 exports.getBalance = getBalance;
+exports.getCode = getCode;
 exports.send = send;
 exports.call = call;
 exports.testSend = testSend;
