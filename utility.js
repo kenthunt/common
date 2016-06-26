@@ -423,6 +423,35 @@ function getBalance(web3, address, callback) {
   }
 }
 
+function getCode(web3, address, callback) {
+  function proxy(){
+    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=proxy&action=eth_getCode&address='+address+'&tag=latest';
+    request.get(url, function(err, httpResponse, body){
+      if (!err) {
+        result = JSON.parse(body);
+        callback(undefined, result['result']);
+      } else {
+        callback(err, undefined);
+      }
+    });
+  }
+  try {
+    if (web3.currentProvider) {
+      web3.eth.getCode(address, function(err, code){
+        if (!err) {
+          callback(undefined, code);
+        } else {
+          proxy();
+        }
+      });
+    } else {
+      proxy();
+    }
+  } catch(err) {
+    proxy();
+  }
+}
+
 function getNextNonce(web3, address, callback) {
   function proxy(){
     var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=proxy&action=eth_GetTransactionCount&address='+address+'&tag=latest';
