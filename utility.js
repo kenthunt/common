@@ -629,14 +629,14 @@ function deployContract(web3, sourceFile, contractName, constructorParams, addre
           abi = JSON.parse(abi);
           bytecode = JSON.parse(bytecode);
         } else {
-          callback('Could not load bytecode and ABI', undefined)
+          callback('Could not load bytecode and ABI', undefined);
           // var solc = require('solc');
           // var compiled = solc.compile(source, 1).contracts[contractName];
           // abi = JSON.parse(compiled.interface);
           // bytecode = compiled.bytecode;
         }
         var contract = web3.eth.contract(abi);
-        send(web3, contract, undefined, 'constructor', constructorParams.concat([{from: address, data: bytecode}]), address, undefined, 0, function(err, result) {
+        send(web3, contract, undefined, 'constructor', constructorParams.concat([{from: address, data: bytecode, gas: 4712388, gasPrice: config.ethGasPrice}]), address, undefined, 0, function(err, result) {
           if (!err) {
             txReceipt(result.txHash, function(err, receipt) {
               if (!err) {
