@@ -638,7 +638,7 @@ function deployContract(web3, sourceFile, contractName, constructorParams, addre
         var contract = web3.eth.contract(abi);
         send(web3, contract, undefined, 'constructor', constructorParams.concat([{from: address, data: bytecode, gas: 4712388, gasPrice: config.ethGasPrice}]), address, undefined, 0, function(err, result) {
           if (!err) {
-            txReceipt(result.txHash, function(err, receipt) {
+            txReceipt(web3, result.txHash, function(err, receipt) {
               if (!err) {
                 var addr = receipt.contractAddress;
                 contract = contract.at(addr);
