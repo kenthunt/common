@@ -622,9 +622,9 @@ function loadContract(web3, sourceCode, address, callback) {
 }
 
 function deployContract(web3, sourceFile, contractName, constructorParams, address, callback) {
-  utility.readFile(sourceFile+'.bytecode', function(err, bytecode){
-    utility.readFile(sourceFile+'.interface', function(err, abi){
-      utility.readFile(sourceFile, function(err, source){
+  readFile(sourceFile+'.bytecode', function(err, bytecode){
+    readFile(sourceFile+'.interface', function(err, abi){
+      readFile(sourceFile, function(err, source){
         if (abi && bytecode) {
           abi = JSON.parse(abi);
           bytecode = JSON.parse(bytecode);
@@ -636,7 +636,7 @@ function deployContract(web3, sourceFile, contractName, constructorParams, addre
           // bytecode = compiled.bytecode;
         }
         var contract = web3.eth.contract(abi);
-        utility.testSend(web3, contract, undefined, 'constructor', constructorParams.concat([{from: address, data: bytecode}]), address, undefined, 0, function(err, result) {
+        send(web3, contract, undefined, 'constructor', constructorParams.concat([{from: address, data: bytecode}]), address, undefined, 0, function(err, result) {
           if (!err) {
             txReceipt(result.txHash, function(err, receipt) {
               if (!err) {
@@ -881,6 +881,7 @@ exports.pack = pack;
 exports.unpack = unpack;
 exports.getBalance = getBalance;
 exports.getCode = getCode;
+exports.getNextNonce = getNextNonce;
 exports.send = send;
 exports.call = call;
 exports.testSend = testSend;
