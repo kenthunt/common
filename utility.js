@@ -637,7 +637,7 @@ function deployContract(web3, sourceFile, contractName, constructorParams, addre
         }
         var contract = web3.eth.contract(abi);
         send(web3, contract, undefined, 'constructor', constructorParams.concat([{from: address, data: bytecode, gas: 4712388, gasPrice: config.ethGasPrice}]), address, undefined, 0, function(err, result) {
-
+          var txHash = result.txHash;
           var address = undefined;
           async.whilst(
             function () { return address==undefined; },
