@@ -637,19 +637,24 @@ function deployContract(web3, sourceFile, contractName, constructorParams, addre
         }
         var contract = web3.eth.contract(abi);
         send(web3, contract, undefined, 'constructor', constructorParams.concat([{from: address, data: bytecode, gas: 4712388, gasPrice: config.ethGasPrice}]), address, undefined, 0, function(err, result) {
-          if (!err) {
-            txReceipt(web3, result.txHash, function(err, receipt) {
-              if (!err) {
-                var addr = receipt.contractAddress;
-                contract = contract.at(addr);
-                callback(undefined, {contract: contract, addr: addr});
-              } else {
-                callback(err, undefined);
-              }
-            });
-          } else {
-            callback(err, undefined);
-          }
+
+          var address = undefined;
+          async.whilst(
+            function () { return address==undefined; },
+            function (callbackWhilst) {
+                setTimeout(function () {
+                  txReceipt(web3, txHash, function(err, receipt) {
+                    if (receipt) {
+                      address = receipt.contractAddress;
+                    }
+                    callbackWhilst(null);
+                  });
+                }, 1*1000);
+            },
+            function (err) {
+              callback(undefined, address);
+            }
+          );
         });
       });
     });
