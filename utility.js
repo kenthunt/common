@@ -698,12 +698,12 @@ function hexToDec(hexStr, length) { //length implies this is a two's complement 
 function pack(data, lengths) {
   packed = "";
   for (var i=0; i<lengths.length; i++) {
-    // if (typeof(data[i])=='string') {
-    //   if (data[i].substring(0,2)=='0x') data[i] = data[i].substring(2);
-    //   packed += data[i];
-    // } else {
-    packed += zeroPad(decToHex(data[i], lengths[i]), lengths[i]/4);
-    // }
+    if (typeof(data[i])=='string' && data[i].substring(0,2)=='0x') {
+      if (data[i].substring(0,2)=='0x') data[i] = data[i].substring(2);
+      packed += data[i];
+    } else {
+      packed += zeroPad(decToHex(data[i], lengths[i]), lengths[i]/4);
+    }
   }
   return packed;
 }
