@@ -232,13 +232,13 @@ function send(web3, contract, address, functionName, args, fromAddress, privateK
                 if (result['result']) {
                   callback(undefined, {txHash: result['result'], nonce: nonce+1});
                 } else if (result['error']) {
-                  callback(result['error']['message'], {txHash: undefined, nonce: nonce+1});
+                  callback(result['error']['message'], {txHash: undefined, nonce: nonce});
                 }
               } catch (err) {
-                callback(err, {txHash: undefined, nonce: nonce+1});
+                callback(err, {txHash: undefined, nonce: nonce});
               }
             } else {
-              callback(err, {txHash: undefined, nonce: nonce+1});
+              callback(err, {txHash: undefined, nonce: nonce});
             }
           });
         }
@@ -258,7 +258,7 @@ function send(web3, contract, address, functionName, args, fromAddress, privateK
           proxy();
         }
       } else {
-        callback('Failed to sign transaction', {txHash: undefined, nonce: nonce+1});
+        callback('Failed to sign transaction', {txHash: undefined, nonce: nonce});
       }
     });
   });
