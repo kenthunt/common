@@ -280,7 +280,7 @@ function estimateGas(web3, contract, address, functionName, args, fromAddress, p
   if (args.length > inputTypes.length && utils.isObject(args[args.length-1])) {
       options = args[args.length-1];
   }
-  getNextNonce(web3, fromAddress, function(nextNonce){
+  getNextNonce(web3, fromAddress, function(err, nextNonce){
     if (nonce==undefined) {
       nonce = nextNonce;
     }
@@ -289,7 +289,7 @@ function estimateGas(web3, contract, address, functionName, args, fromAddress, p
     var typeName = inputTypes.join();
     options.data = '0x' + sha3(functionName+'('+typeName+')').slice(0, 8) + coder.encodeParams(inputTypes, args);
     var tx = new Tx(options);
-    signTx(web3, fromAddress, tx, privateKey, function(tx){
+    signTx(web3, fromAddress, tx, privateKey, function(err, tx){
       if (tx) {
         var serializedTx = tx.serialize().toString('hex');
         if (web3.currentProvider) {
