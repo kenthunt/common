@@ -784,6 +784,69 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
+function getGitterMessages(gitterMessagesCache, callback) {
+  var numMessages = undefined;
+  var beforeId = undefined;
+  var messages = [];
+  var limit = 10;
+  var newMessagesFound = false;
+  async.until(
+    function () { return numMessages <= 0 || limit <= 0; },
+    function (callbackUntil) {
+      limit -= 1;
+      var url = config.gitterHost + '/v1/rooms/'+config.gitterRoomID+'/chatMessages?access_token='+config.gitterToken+'&limit=50';
+      if (beforeId) url += '&beforeId='+beforeId;
+      $.ajax({
+        url: url,
+        type: 'GET',
+        success: function(data) {
+          numMessages = data.length;
+          if (data.length>0) beforeId = data[0].id;
+          data.forEach(function(message){
+            if (gitterMessagesCache[message.id]) {
+              numMessages = 0;
+            } else {
+              newMessagesFound = true;
+            }
+            try {
+              gitterMessagesCache[message.id] = JSON.parse(message.text);
+            } catch (err) {
+            }
+          });
+          callbackUntil(null);
+        },
+        error: function() {
+          numMessages = 0;
+          callbackUntil(null);
+        }
+      });
+    },
+    function (err) {
+      if (err) {
+        callback(err, undefined);
+      } else {
+        callback(undefined, {gitterMessagesCache: gitterMessagesCache, newMessagesFound: newMessagesFound});
+      }
+    }
+  );
+}
+
+function postGitterMessage(message, callback) {
+  var url = config.gitterHost + '/v1/rooms/'+config.gitterRoomID+'/chatMessages?access_token='+config.gitterToken;
+  $.ajax({
+    url: url,
+    type: 'POST',
+    data: {text: message},
+    dataType: 'json',
+    success: function(data) {
+      if (callback) callback(undefined, true);
+    },
+    error: function() {
+      if (callback) callback('Failure', false);
+    }
+  });
+}
+
 if (!Object.prototype.find) {
   Object.values = function(obj) {
     return Object.keys(obj).map(function(key){return obj[key]});
@@ -907,3 +970,5 @@ exports.ethToWei = ethToWei;
 exports.loadContract = loadContract;
 exports.deployContract = deployContract;
 exports.getRandomInt = getRandomInt;
+exports.getGitterMessages = getGitterMessages;
+exports.postGitterMessage = postGitterMessage;
