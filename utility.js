@@ -784,7 +784,7 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
-function getGitterMessages(gitterMessagesCache, callback) {
+function getGitterMessages(gitterMessages, callback) {
   var numMessages = undefined;
   var beforeId = undefined;
   var messages = [];
@@ -803,13 +803,13 @@ function getGitterMessages(gitterMessagesCache, callback) {
           numMessages = data.length;
           if (data.length>0) beforeId = data[0].id;
           data.forEach(function(message){
-            if (gitterMessagesCache[message.id]) {
+            if (gitterMessages[message.id]) {
               numMessages = 0;
             } else {
               newMessagesFound = true;
             }
             try {
-              gitterMessagesCache[message.id] = JSON.parse(message.text);
+              gitterMessages[message.id] = JSON.parse(message.text);
             } catch (err) {
             }
           });
@@ -825,7 +825,7 @@ function getGitterMessages(gitterMessagesCache, callback) {
       if (err) {
         callback(err, undefined);
       } else {
-        callback(undefined, {gitterMessagesCache: gitterMessagesCache, newMessagesFound: newMessagesFound});
+        callback(undefined, {gitterMessages: gitterMessages, newMessagesFound: newMessagesFound});
       }
     }
   );
