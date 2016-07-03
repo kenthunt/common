@@ -796,10 +796,8 @@ function getGitterMessages(gitterMessages, callback) {
       limit -= 1;
       var url = config.gitterHost + '/v1/rooms/'+config.gitterRoomID+'/chatMessages?access_token='+config.gitterToken+'&limit=50';
       if (beforeId) url += '&beforeId='+beforeId;
-      $.ajax({
-        url: url,
-        type: 'GET',
-        success: function(data) {
+      request.get(url, function(err, httpResponse, body){
+        if (!err) {
           numMessages = data.length;
           if (data.length>0) beforeId = data[0].id;
           data.forEach(function(message){
@@ -814,8 +812,7 @@ function getGitterMessages(gitterMessages, callback) {
             }
           });
           callbackUntil(null);
-        },
-        error: function() {
+        } else {
           numMessages = 0;
           callbackUntil(null);
         }
@@ -833,15 +830,10 @@ function getGitterMessages(gitterMessages, callback) {
 
 function postGitterMessage(message, callback) {
   var url = config.gitterHost + '/v1/rooms/'+config.gitterRoomID+'/chatMessages?access_token='+config.gitterToken;
-  $.ajax({
-    url: url,
-    type: 'POST',
-    data: {text: message},
-    dataType: 'json',
-    success: function(data) {
+  request.post({url: url, form: {text: message}}, function(err, httpResponse, body){
+    if (!err) {
       if (callback) callback(undefined, true);
-    },
-    error: function() {
+    } else {
       if (callback) callback('Failure', false);
     }
   });
