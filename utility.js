@@ -701,7 +701,7 @@ function pack(data, lengths) {
     if (typeof(data[i])=='string' && data[i].substring(0,2)=='0x') {
       if (data[i].substring(0,2)=='0x') data[i] = data[i].substring(2);
       packed += zeroPad(data[i], lengths[i]/4);
-    } else if (!typeof(data[i])=='number' && /[a-f]/.test(data[i])) {
+    } else if (typeof(data[i])!='number' && /[a-f]/.test(data[i])) {
       if (data[i].substring(0,2)=='0x') data[i] = data[i].substring(2);
       packed += zeroPad(data[i], lengths[i]/4);
     } else {
