@@ -699,7 +699,7 @@ function pack(data, lengths) {
   packed = "";
   for (var i=0; i<lengths.length; i++) {
     if (typeof(data[i])=='string' && data[i].substring(0,2)=='0x') {
-      if (data[i].substring(0,2)=='0x') data[i] = data[i].substring(2);
+      if (data[i].substring(0,2)=='0x') data[i] = zeroPad(data[i].substring(2), lengths[i]/4);
       packed += data[i];
     } else {
       packed += zeroPad(decToHex(data[i], lengths[i]), lengths[i]/4);
