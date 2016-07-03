@@ -699,8 +699,11 @@ function pack(data, lengths) {
   packed = "";
   for (var i=0; i<lengths.length; i++) {
     if (typeof(data[i])=='string' && data[i].substring(0,2)=='0x') {
-      if (data[i].substring(0,2)=='0x') data[i] = zeroPad(data[i].substring(2), lengths[i]/4);
-      packed += data[i];
+      if (data[i].substring(0,2)=='0x') data[i] = data[i].substring(2);
+      packed += zeroPad(data[i], lengths[i]/4);
+    } else if (/[a-f]/.test(data[i])) {
+      if (data[i].substring(0,2)=='0x') data[i] = data[i].substring(2);
+      packed += zeroPad(data[i], lengths[i]/4);
     } else {
       packed += zeroPad(new BigNumber(data[i]).toString(16), length[i]/4);
       // packed += zeroPad(decToHex(data[i], lengths[i]), lengths[i]/4);
