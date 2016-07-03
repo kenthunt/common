@@ -798,7 +798,7 @@ function getGitterMessages(gitterMessages, callback) {
   var numMessages = undefined;
   var beforeId = undefined;
   var messages = [];
-  var limit = 10;
+  var limit = 5;
   var newMessagesFound = false;
   async.until(
     function () { return numMessages <= 0 || limit <= 0; },
@@ -809,19 +809,23 @@ function getGitterMessages(gitterMessages, callback) {
       request.get(url, function(err, httpResponse, body){
         if (!err) {
           var data = JSON.parse(body);
-          numMessages = data.length;
-          if (data.length>0) beforeId = data[0].id;
-          data.forEach(function(message){
-            if (gitterMessages[message.id]) {
-              numMessages = 0;
-            } else {
-              newMessagesFound = true;
-            }
-            try {
-              gitterMessages[message.id] = JSON.parse(message.text);
-            } catch (err) {
-            }
-          });
+          if (data && data.length>0) {
+            numMessages = data.length;
+            beforeId = data[0].id;
+            data.forEach(function(message){
+              if (gitterMessages[message.id]) {
+                numMessages = 0;
+              } else {
+                newMessagesFound = true;
+              }
+              try {
+                gitterMessages[message.id] = JSON.parse(message.text);
+              } catch (err) {
+              }
+            });
+          } else {
+            numMessages = 0;
+          }
           callbackUntil(null);
         } else {
           numMessages = 0;
