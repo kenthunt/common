@@ -705,7 +705,7 @@ function pack(data, lengths) {
       if (data[i].substring(0,2)=='0x') data[i] = data[i].substring(2);
       packed += zeroPad(data[i], lengths[i]/4);
     } else {
-      packed += zeroPad(new BigNumber(data[i]).toString(16), length[i]/4);
+      packed += zeroPad(new BigNumber(data[i]).toString(16), lengths[i]/4);
       // packed += zeroPad(decToHex(data[i], lengths[i]), lengths[i]/4);
     }
   }
