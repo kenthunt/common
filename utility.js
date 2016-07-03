@@ -798,6 +798,7 @@ function getGitterMessages(gitterMessages, callback) {
       if (beforeId) url += '&beforeId='+beforeId;
       request.get(url, function(err, httpResponse, body){
         if (!err) {
+          var data = JSON.parse(body);
           numMessages = data.length;
           if (data.length>0) beforeId = data[0].id;
           data.forEach(function(message){
