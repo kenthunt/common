@@ -672,9 +672,15 @@ function decToHex(dec, length) {
     // return convertBase((Math.pow(2, length) + decStr).toString(), 10, 16);
     return (new BigNumber(2)).pow(length).add(new BigNumber(dec)).toString(16);
   } else {
+    var result = null;
     try {
-      return convertBase(dec.toString(), 10, 16);
+      result = convertBase(dec.toString(), 10, 16);
     } catch (err) {
+      result = null;
+    }
+    if (result) {
+      return result;
+    } else {
       return (new BigNumber(dec)).toString(16);
     }
   }
