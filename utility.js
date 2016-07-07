@@ -831,7 +831,7 @@ function getGitterMessages(gitterMessages, callback) {
   var beforeId = undefined;
   var messages = [];
   var limit = 5;
-  var newMessagesFound = false;
+  var newMessagesFound = 0;
   async.until(
     function () { return limit <= 0; },
     function (callbackUntil) {
@@ -847,7 +847,7 @@ function getGitterMessages(gitterMessages, callback) {
               if (gitterMessages[message.id]) {
                 limit = 0;
               } else {
-                newMessagesFound = true;
+                newMessagesFound++;
               }
               try {
                 gitterMessages[message.id] = JSON.parse(message.text);
