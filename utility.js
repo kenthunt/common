@@ -1005,5 +1005,6 @@ exports.ethToWei = ethToWei;
 exports.loadContract = loadContract;
 exports.deployContract = deployContract;
 exports.getRandomInt = getRandomInt;
+exports.streamGitterMessages = streamGitterMessages;
 exports.getGitterMessages = getGitterMessages;
 exports.postGitterMessage = postGitterMessage;
