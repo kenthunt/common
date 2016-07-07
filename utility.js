@@ -795,7 +795,7 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
-function streamGitterMessages(callback) {
+function streamGitterMessages(gitterMessages, callback) {
   var heartbeat = " \n";
   var options = {
     hostname: config.gitterStream,
@@ -809,16 +809,19 @@ function streamGitterMessages(callback) {
       var msg = chunk.toString();
       if (msg !== heartbeat) {
         try {
-          var message = JSON.parse(message.text);
-          callback(undefined, message);
+          var message = JSON.parse(msg);
+          if (!gitterMessages[message.id]) {
+            gitterMessages[message.id] = JSON.parse(message.text);
+            callback(undefined, true);
+          }
         } catch (err) {
-          callback(err, undefined);
+          callback(err, false);
         }
       }
     });
   });
   req.on('error', function(err) {
-    callback(err, undefined);
+    callback(err, false);
   });
   req.end();
 }
