@@ -12,6 +12,7 @@ var Tx = require('ethereumjs-tx');
 var keythereum = require('keythereum');
 var ethUtil = require('ethereumjs-util');
 var BigNumber = require('bignumber.js');
+var https = require('https');
 
 function weiToEth(wei) {
   return (wei/1000000000000000000).toFixed(3);
@@ -794,6 +795,34 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
+function streamGitterMessages(callback) {
+  var heartbeat = " \n";
+  var options = {
+    hostname: config.gitterStream,
+    port:     443,
+    path:     '/v1/rooms/' + config.gitterRoomID + '/chatMessages',
+    method:   'GET',
+    headers:  {'Authorization': 'Bearer ' + config.gitterToken}
+  };
+  var req = https.request(options, function(res) {
+    res.on('data', function(chunk) {
+      var msg = chunk.toString();
+      if (msg !== heartbeat) {
+        try {
+          var message = JSON.parse(message.text);
+          callback(undefined, message);
+        } catch (err) {
+          callback(err, undefined);
+        }
+      }
+    });
+  });
+  req.on('error', function(err) {
+    callback(err, undefined);
+  });
+  req.end();
+}
+
 function getGitterMessages(gitterMessages, callback) {
   var numMessages = undefined;
   var beforeId = undefined;
@@ -801,7 +830,7 @@ function getGitterMessages(gitterMessages, callback) {
   var limit = 5;
   var newMessagesFound = false;
   async.until(
-    function () { return numMessages <= 0 || limit <= 0; },
+    function () { return limit <= 0; },
     function (callbackUntil) {
       limit -= 1;
       var url = config.gitterHost + '/v1/rooms/'+config.gitterRoomID+'/chatMessages?access_token='+config.gitterToken+'&limit=50';
@@ -810,11 +839,10 @@ function getGitterMessages(gitterMessages, callback) {
         if (!err) {
           var data = JSON.parse(body);
           if (data && data.length>0) {
-            numMessages = data.length;
             beforeId = data[0].id;
             data.forEach(function(message){
               if (gitterMessages[message.id]) {
-                numMessages = 0;
+                limit = 0;
               } else {
                 newMessagesFound = true;
               }
@@ -824,7 +852,7 @@ function getGitterMessages(gitterMessages, callback) {
               }
             });
           } else {
-            numMessages = 0;
+            limit = 0;
           }
           callbackUntil(null);
         } else {
