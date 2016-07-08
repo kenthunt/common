@@ -14,12 +14,14 @@ var ethUtil = require('ethereumjs-util');
 var BigNumber = require('bignumber.js');
 var https = require('https');
 
-function weiToEth(wei) {
-  return (wei/1000000000000000000).toFixed(3);
+function weiToEth(wei, divisor) {
+  if (!divisor) divisor = 1000000000000000000;
+  return (wei/divisor).toFixed(3);
 }
 
-function ethToWei(eth) {
-  return parseFloat((eth*1000000000000000000).toPrecision(10));
+function ethToWei(eth, divisor) {
+  if (!divisor) divisor = 1000000000000000000;
+  return parseFloat((eth*divisor).toPrecision(10));
 }
 
 function roundToNearest(numToRound, numToRoundTo) {
