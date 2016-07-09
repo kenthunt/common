@@ -387,6 +387,8 @@ function logs(web3, contract, address, fromBlock, toBlock, callback) {
       web3.eth.filter(options, function(error, item){
         if (!error) {
           decodeEvent(item);
+        } else {
+          proxy(1);
         }
       });
     } else {
