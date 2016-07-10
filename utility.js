@@ -861,7 +861,7 @@ function getGitterMessages(gitterMessages, callback) {
           } else {
             limit = 0;
           }
-          callbackUntil(null);
+          setTimeout(function(){callbackUntil(null)}, 1000);
         } else {
           numMessages = 0;
           callbackUntil(null);
