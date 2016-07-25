@@ -331,7 +331,17 @@ function txReceipt(web3, txHash, callback) {
   }
   try {
     if (web3.currentProvider) {
-      callback(undefined, web3.eth.getTransactionReceipt(txHash));
+      try {
+        web3.eth.getTransactionReceipt(txHash, function (err, result) {
+          if (err) {
+            proxy();
+          } else {
+            callback(undefined, result);
+          }
+        });
+      } catch (err) {
+        proxy();
+      }
     } else {
       proxy();
     }
