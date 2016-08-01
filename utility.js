@@ -214,7 +214,9 @@ function send(web3, contract, address, functionName, args, fromAddress, privateK
       if (options.data.slice(0,2)!="0x") {
         options.data = '0x' + options.data;
       }
-      options.data += encodeConstructorParams(contract.abi, args);
+      var encodedParams = encodeConstructorParams(contract.abi, args);
+      console.log(encodedParams);
+      options.data += encodedParams;
     } else {
       options.to = address;
       var functionAbi = contract.abi.find(function(element, index, array) {return element.name==functionName});
