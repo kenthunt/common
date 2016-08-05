@@ -215,6 +215,7 @@ function send(web3, contract, address, functionName, args, fromAddress, privateK
         options.data = '0x' + options.data;
       }
       var encodedParams = encodeConstructorParams(contract.abi, args);
+      console.log(encodedParams);
       options.data += encodedParams;
     } else {
       options.to = address;
@@ -259,7 +260,7 @@ function send(web3, contract, address, functionName, args, fromAddress, privateK
           if (!err) {
             callback(undefined, {txHash: hash, nonce: nonce+1});
           } else {
-            console.log("HERE:", err, nonce);
+            console.log(err);
             proxy();
           }
         })
