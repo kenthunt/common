@@ -254,6 +254,7 @@ function send(web3, contract, address, functionName, args, fromAddress, privateK
     try {
       if (web3.currentProvider) {
         options.from = fromAddress;
+        options.gas = options.gasLimit;
         web3.eth.sendTransaction(options, function(err, hash){
           if (!err) {
             callback(undefined, {txHash: hash, nonce: nonce+1});
@@ -661,7 +662,7 @@ function deployContract(web3, sourceFile, contractName, constructorParams, addre
           // bytecode = compiled.bytecode;
         }
         var contract = web3.eth.contract(abi);
-        send(web3, contract, undefined, 'constructor', constructorParams.concat([{from: address, data: bytecode, gas: 4712388, gasPrice: config.ethGasPrice}]), address, undefined, 0, function(err, result) {
+        send(web3, contract, undefined, 'constructor', constructorParams.concat([{from: address, data: bytecode, gas: 4700000, gasPrice: config.ethGasPrice}]), address, undefined, 0, function(err, result) {
           var txHash = result.txHash;
           var address = undefined;
           async.whilst(
