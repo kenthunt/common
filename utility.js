@@ -224,8 +224,8 @@ function send(web3, contract, address, functionName, args, fromAddress, privateK
       var typeName = inputTypes.join();
       options.data = '0x' + sha3(functionName+'('+typeName+')').slice(0, 8) + coder.encodeParams(inputTypes, args);
     }
+    var tx = new Tx(options);
     function proxy() {
-      var tx = new Tx(options);
       signTx(web3, fromAddress, tx, privateKey, function(err, tx){
         if (!err) {
           var serializedTx = tx.serialize().toString('hex');
@@ -256,6 +256,7 @@ function send(web3, contract, address, functionName, args, fromAddress, privateK
       if (web3.currentProvider) {
         options.from = fromAddress;
         options.gas = options.gasLimit;
+        delete options.gasLimit;
         web3.eth.sendTransaction(options, function(err, hash){
           if (!err) {
             callback(undefined, {txHash: hash, nonce: nonce+1});
