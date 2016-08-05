@@ -215,7 +215,6 @@ function send(web3, contract, address, functionName, args, fromAddress, privateK
         options.data = '0x' + options.data;
       }
       var encodedParams = encodeConstructorParams(contract.abi, args);
-      console.log(encodedParams);
       options.data += encodedParams;
     } else {
       options.to = address;
@@ -224,11 +223,11 @@ function send(web3, contract, address, functionName, args, fromAddress, privateK
       var typeName = inputTypes.join();
       options.data = '0x' + sha3(functionName+'('+typeName+')').slice(0, 8) + coder.encodeParams(inputTypes, args);
     }
-    var tx = new Tx(options);
-    signTx(web3, fromAddress, tx, privateKey, function(err, tx){
-      if (!err) {
-        var serializedTx = tx.serialize().toString('hex');
-        function proxy() {
+    function proxy() {
+      var tx = new Tx(options);
+      signTx(web3, fromAddress, tx, privateKey, function(err, tx){
+        if (!err) {
+          var serializedTx = tx.serialize().toString('hex');
           var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api';
           request.post({url: url, form: {module: 'proxy', action: 'eth_sendRawTransaction', hex: serializedTx}}, function(err, httpResponse, body){
             if (!err) {
@@ -246,26 +245,29 @@ function send(web3, contract, address, functionName, args, fromAddress, privateK
               callback(err, {txHash: undefined, nonce: nonce});
             }
           });
+        } else {
+          console.log(err)
+          callback('Failed to sign transaction', {txHash: undefined, nonce: nonce});
         }
-        if (web3.currentProvider) {
-          try {
-            web3.eth.sendRawTransaction(serializedTx, function (err, hash) {
-              if (err) {
-                proxy();
-              } else {
-                callback(undefined, {txHash: hash, nonce: nonce+1});
-              }
-            });
-          } catch (err) {
+      });
+    }
+    try {
+      if (web3.currentProvider) {
+        options.from = fromAddress;
+        web3.eth.sendTransaction(options, function(err, hash){
+          if (!err) {
+            callback(undefined, {txHash: hash, nonce: nonce+1});
+          } else {
+            console.log("HERE:", err, nonce);
             proxy();
           }
-        } else {
-          proxy();
-        }
+        })
       } else {
-        callback('Failed to sign transaction', {txHash: undefined, nonce: nonce});
+        proxy();
       }
-    });
+    } catch (err) {
+      proxy();
+    }
   });
 }
 
@@ -484,9 +486,15 @@ function getNextNonce(web3, address, callback) {
   }
   try {
     if (web3.currentProvider) {
-      var nextNonce = Number(web3.eth.getTransactionCount(address));
-      //Note. initial nonce is 2^20 on testnet, but getTransactionCount already starts at 2^20.
-      callback(undefined, nextNonce);
+      web3.eth.getTransactionCount(address, function(err, result){
+        if (!err) {
+          var nextNonce = Number(result);
+          //Note. initial nonce is 2^20 on testnet, but getTransactionCount already starts at 2^20.
+          callback(undefined, nextNonce);
+        } else {
+          proxy();
+        }
+      });
     } else {
       proxy();
     }
