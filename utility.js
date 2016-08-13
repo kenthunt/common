@@ -857,7 +857,7 @@ function getGitterMessages(gitterMessages, callback) {
   var numMessages = undefined;
   var skip = 0;
   var messages = [];
-  var pages = 50;
+  var pages = 20;
   var newMessagesFound = 0;
   var perPage = 100;
   async.until(
