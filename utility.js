@@ -418,6 +418,49 @@ function logs(web3, contract, address, fromBlock, toBlock, callback) {
   proxy(1);
 }
 
+function logsOnce(web3, contract, address, fromBlock, toBlock, callback) {
+  var options = {fromBlock: fromBlock, toBlock: toBlock, address: address};
+  function decodeEvent(item) {
+    eventAbis = contract.abi.filter(function(eventAbi){return eventAbi.type=='event' && item.topics[0]=='0x'+sha3(eventAbi.name+'('+eventAbi.inputs.map(function(x) {return x.type}).join()+')')});
+    if (eventAbis.length>0) {
+      var eventAbi = eventAbis[0];
+      var event = new SolidityEvent(web3, eventAbi, address);
+      var result = event.decode(item);
+      return result;
+    } else {
+      return undefined;
+    }
+  }
+  function proxy(retries) {
+    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=logs&action=getLogs&address='+address+'&fromBlock='+fromBlock+'&toBlock='+toBlock;
+    request.get(url, function(err, httpResponse, body){
+      if (!err) {
+        try {
+          var result = JSON.parse(body);
+          var items = result['result'];
+          async.map(items,
+            function(item, callbackMap){
+              item.blockNumber = hexToDec(item.blockNumber);
+              item.logIndex = hexToDec(item.logIndex);
+              item.transactionIndex = hexToDec(item.transactionIndex);
+              var event = decodeEvent(item);
+              callbackMap(null, event);
+            },
+            function(err, events){
+              callback(null, events);
+            }
+          );
+        } catch (err) {
+          if (retries>0) {
+            proxy(retries-1)
+          }
+        }
+      }
+    });
+  }
+  proxy(1);
+}
+
 function getBalance(web3, address, callback) {
   function proxy(){
     var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=account&action=balance&address='+address+'&tag=latest';
@@ -1023,6 +1066,7 @@ exports.testCall = testCall;
 exports.estimateGas = estimateGas;
 exports.txReceipt = txReceipt;
 exports.logs = logs;
+exports.logsOnce = logsOnce;
 exports.blockNumber = blockNumber;
 exports.sign = sign;
 exports.verify = verify;
