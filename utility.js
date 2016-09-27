@@ -642,7 +642,9 @@ function sign(web3, address, value, privateKey, callback) {
     }
   } else {
     web3.eth.sign(address, value, function(err, sig) {
-      if (!err) {
+      if (err && value.slice(0,2)!='0x') {
+        sign(web3, address, '0x'+value, privateKey, callback);
+      } else if (!err) {
         try {
           var r = sig.slice(0, 66);
           var s = '0x' + sig.slice(66, 130);
