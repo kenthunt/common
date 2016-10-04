@@ -964,10 +964,12 @@ function getGitterMessages(gitterMessages, callback) {
 function postGitterMessage(message, callback) {
   var url = config.gitterHost + '/v1/rooms/'+config.gitterRoomID+'/chatMessages?access_token='+config.gitterToken;
   request.post({url: url, form: {text: message}}, function(err, httpResponse, body){
-    if (!err) {
-      if (callback) callback(undefined, true);
-    } else {
+    if (err) {
       if (callback) callback('Failure', false);
+    } else if (httpResponse.statusCode==429) {
+      if (callback) callback('The offchain order book is receiving too many requests. Please wait a minute and try again.', false);
+    } else {
+      if (callback) callback(undefined, true);
     }
   });
 }
