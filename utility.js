@@ -29,6 +29,26 @@ function roundToNearest(numToRound, numToRoundTo) {
     return Math.round(numToRound * numToRoundTo) / numToRoundTo;
 }
 
+function getURL(url, callback) {
+  request.get(url, function(err, httpResponse, body){
+    if (err) {
+      callback(err, undefined);
+    } else {
+      callback(undefined, body);
+    }
+  });
+}
+
+function postURL(url, callback) {
+  request.post({url: url, form: formData}, function(err, httpResponse, body){
+    if (err) {
+      callback(err, undefined);
+    } else {
+      callback(undefined, body);
+    }
+  });
+}
+
 function readFile(filename, callback) {
   if (callback) {
     try {
@@ -1093,6 +1113,8 @@ exports.verify = verify;
 exports.createAccount = createAccount;
 exports.verifyPrivateKey = verifyPrivateKey;
 exports.toChecksumAddress = toChecksumAddress;
+exports.getURL = getURL;
+exports.postURL = postURL;
 exports.readFile = readFile;
 exports.writeFile = writeFile;
 exports.weiToEth = weiToEth;
