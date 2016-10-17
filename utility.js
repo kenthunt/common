@@ -39,7 +39,7 @@ function getURL(url, callback) {
   });
 }
 
-function postURL(url, callback) {
+function postURL(url, formData, callback) {
   request.post({url: url, form: formData}, function(err, httpResponse, body){
     if (err) {
       callback(err, undefined);
