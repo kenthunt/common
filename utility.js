@@ -255,7 +255,7 @@ function send(web3, contract, address, functionName, args, fromAddress, privateK
           var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api';
           var formData = {module: 'proxy', action: 'eth_sendRawTransaction', hex: serializedTx};
           if (config.etherscanAPIKey) formData.apikey = config.etherscanAPIKey;
-          postURL({url: url, form: formData}, function(err, body){
+          postURL(url, formData, function(err, body){
             if (!err) {
               try {
                 var result = JSON.parse(body);
@@ -985,7 +985,7 @@ function getGitterMessages(gitterMessages, callback) {
 
 function postGitterMessage(message, callback) {
   var url = config.gitterHost + '/v1/rooms/'+config.gitterRoomID+'/chatMessages?access_token='+config.gitterToken;
-  postURL({url: url, form: {text: message}}, function(err, body){
+  postURL(url, {text: message}, function(err, body){
     if (err) {
       if (callback) callback('Failure', false);
     } else if (httpResponse.statusCode==429) {
