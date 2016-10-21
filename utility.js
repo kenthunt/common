@@ -61,7 +61,7 @@ function readFile(filename, callback) {
           }
         });
       } else {
-        getURL(config.homeURL+"/"+filename, function(err, httpResponse, body){
+        getURL(config.homeURL+"/"+filename, function(err, body){
           if (err) {
             callback(err, undefined);
           } else {
