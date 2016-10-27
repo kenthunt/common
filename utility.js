@@ -91,6 +91,43 @@ function writeFile(filename, data, callback) {
 	});
 }
 
+function createCookie(name,value,days) {
+  if (localStorage) {
+    localStorage.setItem(name, value);
+  } else {
+    if (days) {
+      var date = new Date();
+      date.setTime(date.getTime()+(days*24*60*60*1000));
+      var expires = "; expires="+date.toGMTString();
+    }
+    else var expires = "";
+    document.cookie = name+"="+value+expires+"; path=/";
+  }
+}
+
+function readCookie(name) {
+  if (localStorage) {
+    return localStorage.getItem(name);
+  } else {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0;i < ca.length;i++) {
+      var c = ca[i];
+      while (c.charAt(0)==' ') c = c.substring(1,c.length);
+      if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    }
+    return null;
+  }
+}
+
+function eraseCookie(name) {
+  if (localStorage) {
+    localStorage.removeItem(name);
+  } else {
+    createCookie(name,"",-1);
+  }
+}
+
 function testCall(web3, contract, address, functionName, args, callback) {
   var options = {};
   options.data = contract[functionName].getData.apply(null, args);
@@ -1113,6 +1150,9 @@ exports.verify = verify;
 exports.createAccount = createAccount;
 exports.verifyPrivateKey = verifyPrivateKey;
 exports.toChecksumAddress = toChecksumAddress;
+exports.readCookie = readCookie;
+exports.writeCookie = writeCookie;
+exports.eraseCookie = eraseCookie;
 exports.getURL = getURL;
 exports.postURL = postURL;
 exports.readFile = readFile;
