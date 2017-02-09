@@ -685,12 +685,24 @@ function signTx(web3, address, tx, privateKey, callback) {
   }
 }
 
-function sign(web3, address, value, privateKey, callback) {
+function sign(web3, address, msgToSign, privateKey, callback) {
+  if (msgToSign.substring(0,2)!='0x') msgToSign = '0x' + msgToSign;
+  function prefixMessage(msgToSign) {
+    var msg = new Buffer(msgToSign.slice(2), 'hex');
+    msg = Buffer.concat([new Buffer('\x19Ethereum Signed Message:\n' + msg.length.toString()), msg])
+    msg = web3.sha3('0x'+msg.toString('hex'), {encoding: 'hex'});
+    msg = new Buffer(msg.slice(2), 'hex');
+    return '0x'+msg.toString('hex');
+  }
+  function testSig(msg, sig, address) {
+    var recoveredAddress = '0x'+ethUtil.pubToAddress(ethUtil.ecrecover(msg, sig.v, sig.r, sig.s)).toString('hex');
+    return recoveredAddress==address;
+  }
   if (privateKey) {
     if (privateKey.substring(0,2)=='0x') privateKey = privateKey.substring(2,privateKey.length);
-    if (value.substring(0,2)=='0x') value = value.substring(2,value.length);
+    msgToSign = prefixMessage(msgToSign);
     try {
-      var sig = ethUtil.ecsign(new Buffer(value, 'hex'), new Buffer(privateKey, 'hex'));
+      var sig = ethUtil.ecsign(new Buffer(msgToSign.slice(2), 'hex'), new Buffer(privateKey, 'hex'));
       var r = '0x'+sig.r.toString('hex');
       var s = '0x'+sig.s.toString('hex');
       var v = sig.v;
@@ -700,22 +712,29 @@ function sign(web3, address, value, privateKey, callback) {
       callback(err, undefined);
     }
   } else {
-    web3.eth.sign(address, value, function(err, sig) {
-      if (err && value.slice(0,2)!='0x') {
-        sign(web3, address, '0x'+value, privateKey, callback);
-      } else if (!err) {
-        try {
-          var r = sig.slice(0, 66);
-          var s = '0x' + sig.slice(66, 130);
-          var v = web3.toDecimal('0x' + sig.slice(130, 132));
-          if (v!=27 && v!=28) v+=27;
-          callback(undefined, {r: r, s: s, v: v});
-        } catch (err) {
-          callback(err, undefined);
-        }
-      } else {
-        callback(err, undefined);
+    web3.version.getNode(function(error, node){
+      if (node.match('Parity') != null || node.match('TestRPC') != null) {
+        msgToSign = prefixMessage(msgToSign);
       }
+      web3.eth.sign(address, msgToSign, function(err, sig) {
+        sig = ethUtil.fromRpcSig(sig);
+        var msg;
+        if (node.match('Parity') != null || node.match('TestRPC') != null) {
+          msg = msgToSign;
+        } else {
+          msg = prefixMessage(msgToSign);
+        }
+        msg = new Buffer(msg.slice(2),'hex');
+        if (testSig(msg, sig, address)) {
+          var r = '0x'+sig.r.toString('hex');
+          var s = '0x'+sig.s.toString('hex');
+          var v = sig.v;
+          var result = {r: r, s: s, v: v};
+          callback(undefined, result);
+        } else {
+          callback('Failed to sign message', undefined);
+        }
+      });
     });
   }
 }
