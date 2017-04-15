@@ -1,59 +1,65 @@
-var config = (typeof(global.config) == 'undefined' && typeof(config) == 'undefined') ? require('../config.js') : global.config;
-var fs = require('fs');
-var request = require('request');
-var async = (typeof(window) === 'undefined') ? require('async') : require('async/dist/async.min.js');
-var Web3 = require('web3');
-var SolidityFunction = require('web3/lib/web3/function.js');
-var SolidityEvent = require('web3/lib/web3/event.js');
-var coder = require('web3/lib/solidity/coder.js');
-var utils = require('web3/lib/utils/utils.js');
-var sha3 = require('web3/lib/utils/sha3.js');
-var Tx = require('ethereumjs-tx');
-var keythereum = require('keythereum');
-var ethUtil = require('ethereumjs-util');
-var BigNumber = require('bignumber.js');
-var https = require('https');
+/* eslint-env browser */
+/* eslint no-console: ["error", { allow: ["log"] }] */
 
-function weiToEth(wei, divisor) {
-  if (!divisor) divisor = 1000000000000000000;
-  return (wei/divisor).toFixed(3);
-}
+const config = typeof global.config === 'undefined' && typeof config === 'undefined' // eslint-disable-line no-use-before-define
+  ? require('../config.js') // eslint-disable-line import/no-unresolved
+  : global.config;
+const fs = require('fs');
+const request = require('request');
+const async = typeof window === 'undefined' ? require('async') : require('async/dist/async.min.js');
+const Web3 = require('web3');
+const SolidityFunction = require('web3/lib/web3/function.js');
+const SolidityEvent = require('web3/lib/web3/event.js');
+const coder = require('web3/lib/solidity/coder.js');
+const utils = require('web3/lib/utils/utils.js');
+const sha3 = require('web3/lib/utils/sha3.js');
+const Tx = require('ethereumjs-tx');
+const keythereum = require('keythereum');
+const ethUtil = require('ethereumjs-util');
+const BigNumber = require('bignumber.js');
 
-function ethToWei(eth, divisor) {
-  if (!divisor) divisor = 1000000000000000000;
-  return parseFloat((eth*divisor).toPrecision(10));
-}
+const utility = {};
 
-function roundToNearest(numToRound, numToRoundTo) {
-    numToRoundTo = 1 / (numToRoundTo);
-    return Math.round(numToRound * numToRoundTo) / numToRoundTo;
-}
+utility.weiToEth = function weiToEth(wei, divisorIn) {
+  const divisor = !divisorIn ? 1000000000000000000 : divisorIn;
+  return (wei / divisor).toFixed(3);
+};
 
-function getURL(url, callback, options) {
-  request.get(url, options, function(err, httpResponse, body){
+utility.ethToWei = function ethToWei(eth, divisorIn) {
+  const divisor = !divisorIn ? 1000000000000000000 : divisorIn;
+  return parseFloat((eth * divisor).toPrecision(10));
+};
+
+utility.roundToNearest = function roundToNearest(numToRound, numToRoundToIn) {
+  const numToRoundTo = 1 / numToRoundToIn;
+  return Math.round(numToRound * numToRoundTo) / numToRoundTo;
+};
+
+utility.getURL = function getURL(url, callback, options) {
+  request.get(url, options, (err, httpResponse, body) => {
     if (err) {
       callback(err, undefined);
     } else {
       callback(undefined, body);
     }
   });
-}
+};
 
-function postURL(url, formData, callback) {
-  request.post({url: url, form: formData}, function(err, httpResponse, body){
+utility.postURL = function postURL(url, formData, callback) {
+  request.post({ url, form: formData }, (err, httpResponse, body) => {
     if (err) {
       callback(err, undefined);
     } else {
       callback(undefined, body);
     }
   });
-}
+};
 
-function readFile(filename, callback) {
+utility.readFile = function readFile(filename, callback) { // eslint-disable-line consistent-return
   if (callback) {
     try {
-      if (typeof(window) === 'undefined') {
-        fs.readFile(filename,{ encoding: 'utf8' }, function(err, data) {
+      if (typeof window === 'undefined') {
+        fs.readFile(filename, { encoding: 'utf8' }, (err, data) => {
           if (err) {
             callback(err, undefined);
           } else {
@@ -61,7 +67,7 @@ function readFile(filename, callback) {
           }
         });
       } else {
-        getURL(config.homeURL+"/"+filename, function(err, body){
+        utility.getURL(`${config.homeURL}/${filename}`, (err, body) => {
           if (err) {
             callback(err, undefined);
           } else {
@@ -74,94 +80,141 @@ function readFile(filename, callback) {
     }
   } else {
     try {
-      return fs.readFileSync(filename,{ encoding: 'utf8' });
+      return fs.readFileSync(filename, { encoding: 'utf8' });
     } catch (err) {
       return undefined;
     }
   }
-}
+};
 
-function writeFile(filename, data, callback) {
-  fs.writeFile(filename, data, function(err) {
-    if(err) {
+utility.writeFile = function writeFile(filename, data, callback) {
+  fs.writeFile(filename, data, (err) => {
+    if (err) {
       callback(err, false);
     } else {
       callback(undefined, true);
     }
-	});
-}
+  });
+};
 
-function createCookie(name,value,days) {
+utility.createCookie = function createCookie(name, value, days) {
   if (localStorage) {
     localStorage.setItem(name, value);
   } else {
+    let expires;
     if (days) {
-      var date = new Date();
-      date.setTime(date.getTime()+(days*24*60*60*1000));
-      var expires = "; expires="+date.toGMTString();
+      const date = new Date();
+      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+      expires = `; expires=${date.toGMTString()}`;
+    } else {
+      expires = '';
     }
-    else var expires = "";
-    document.cookie = name+"="+value+expires+"; path=/";
+    document.cookie = `${name}=${value}${expires}; path=/`;
   }
-}
+};
 
-function readCookie(name) {
+utility.readCookie = function readCookie(name) {
   if (localStorage) {
     return localStorage.getItem(name);
-  } else {
-    var nameEQ = name + "=";
-    var ca = document.cookie.split(';');
-    for(var i=0;i < ca.length;i++) {
-      var c = ca[i];
-      while (c.charAt(0)==' ') c = c.substring(1,c.length);
-      if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
-    }
-    return null;
   }
-}
+  const nameEQ = `${name}=`;
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i += 1) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') {
+      c = c.substring(1, c.length);
+    }
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+};
 
-function eraseCookie(name) {
+utility.eraseCookie = function eraseCookie(name) {
   if (localStorage) {
     localStorage.removeItem(name);
   } else {
-    createCookie(name,"",-1);
+    utility.createCookie(name, '', -1);
   }
-}
+};
 
-function testCall(web3, contract, address, functionName, args, callback) {
-  var options = {};
+utility.getNextNonce = function getNextNonce(web3, address, callback) {
+  function proxy() {
+    let url =
+      `https://${
+      config.ethTestnet ? 'testnet' : 'api'
+      }.etherscan.io/api?module=proxy&action=eth_GetTransactionCount&address=${
+      address
+      }&tag=latest`;
+    if (config.etherscanAPIKey) url += `&apikey=${config.etherscanAPIKey}`;
+    utility.getURL(url, (err, body) => {
+      if (!err) {
+        const result = JSON.parse(body);
+        const nextNonce = Number(result.result);
+        callback(undefined, nextNonce);
+      } else {
+        callback(err, undefined);
+      }
+    });
+  }
+  try {
+    if (web3.currentProvider) {
+      web3.eth.getTransactionCount(address, (err, result) => {
+        if (!err) {
+          const nextNonce = Number(result);
+          // Note. initial nonce is 2^20 on testnet, but getTransactionCount already starts at 2^20.
+          callback(undefined, nextNonce);
+        } else {
+          proxy();
+        }
+      });
+    } else {
+      proxy();
+    }
+  } catch (err) {
+    proxy();
+  }
+};
+
+utility.testCall = function testCall(web3, contract, address, functionName, args, callback) {
+  const options = {};
   options.data = contract[functionName].getData.apply(null, args);
   options.to = address;
-  web3.eth.call(options, function(err, result) {
+  web3.eth.call(options, (err, result) => {
     if (!err) {
-      var functionAbi = contract.abi.find(function(element, index, array) {return element.name==functionName});
-      var solidityFunction = new SolidityFunction(web3.Eth, functionAbi, address);
+      const functionAbi = contract.abi.find(element =>
+        element.name === functionName);
+      const solidityFunction = new SolidityFunction(web3.Eth, functionAbi, address);
       callback(err, solidityFunction.unpackOutput(result));
     } else {
       callback(err, result);
     }
   });
-}
+};
 
-function call(web3, contract, address, functionName, args, callback) {
+utility.call = function call(web3In, contract, address, functionName, args, callback) {
   function proxy(retries) {
-    var web3 = new Web3();
-    var data = contract[functionName].getData.apply(null, args);
-    var result = undefined;
-    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=proxy&action=eth_Call&to='+address+'&data='+data;
-    if (config.etherscanAPIKey) url += '&apikey='+config.etherscanAPIKey;
-    getURL(url, function(err, body){
+    const web3 = new Web3();
+    const data = contract[functionName].getData.apply(null, args);
+    let url =
+      `https://${
+      config.ethTestnet ? 'testnet' : 'api'
+      }.etherscan.io/api?module=proxy&action=eth_Call&to=${
+      address
+      }&data=${
+      data}`;
+    if (config.etherscanAPIKey) url += `&apikey=${config.etherscanAPIKey}`;
+    utility.getURL(url, (err, body) => {
       if (!err) {
         try {
-          result = JSON.parse(body);
-          var functionAbi = contract.abi.find(function(element, index, array) {return element.name==functionName});
-          var solidityFunction = new SolidityFunction(web3.Eth, functionAbi, address);
-          var result = solidityFunction.unpackOutput(result['result']);
-          callback(undefined, result);
-        } catch (err) {
-          if (retries>0) {
-            setTimeout(function(){
-              proxy(retries-1);
+          const result = JSON.parse(body);
+          const functionAbi = contract.abi.find(element => element.name === functionName);
+          const solidityFunction = new SolidityFunction(web3.Eth, functionAbi, address);
+          const resultUnpacked = solidityFunction.unpackOutput(result.result);
+          callback(undefined, resultUnpacked);
+        } catch (errJson) {
+          if (retries > 0) {
+            setTimeout(() => {
+              proxy(retries - 1);
             }, 1000);
           } else {
             callback(err, undefined);
@@ -173,16 +226,16 @@ function call(web3, contract, address, functionName, args, callback) {
     });
   }
   try {
-    if (web3.currentProvider) {
-      var data = contract[functionName].getData.apply(null, args);
-      web3.eth.call({to: address, data: data}, function(err, result){
+    if (web3In.currentProvider) {
+      const data = contract[functionName].getData.apply(null, args);
+      web3In.eth.call({ to: address, data }, (err, result) => {
         if (!err) {
-          var functionAbi = contract.abi.find(function(element, index, array) {return element.name==functionName});
-          var solidityFunction = new SolidityFunction(web3.Eth, functionAbi, address);
+          const functionAbi = contract.abi.find(element => element.name === functionName);
+          const solidityFunction = new SolidityFunction(web3In.Eth, functionAbi, address);
           try {
-            var result = solidityFunction.unpackOutput(result);
-            callback(undefined, result);
-          } catch (err) {
+            const resultUnpacked = solidityFunction.unpackOutput(result);
+            callback(undefined, resultUnpacked);
+          } catch (errJson) {
             proxy(1);
           }
         } else {
@@ -192,125 +245,134 @@ function call(web3, contract, address, functionName, args, callback) {
     } else {
       proxy(1);
     }
-  } catch(err) {
+  } catch (err) {
     proxy(1);
   }
-}
+};
 
-function testSend(web3, contract, address, functionName, args, fromAddress, privateKey, nonce, callback) {
+utility.testSend = function testSend(
+  web3, contract, address, functionName, argsIn, fromAddress, privateKey, nonce, callback) {
   function encodeConstructorParams(abi, params) {
-      return abi.filter(function (json) {
-        return json.type === 'constructor' && json.inputs.length === params.length;
-      }).map(function (json) {
-        return json.inputs.map(function (input) {
-          return input.type;
-        });
-      }).map(function (types) {
-        return coder.encodeParams(types, params);
-      })[0] || '';
+    return abi.filter(json =>
+      json.type === 'constructor' && json.inputs.length === params.length)
+    .map(json =>
+      json.inputs.map(input => input.type))
+    .map(types => coder.encodeParams(types, params))[0] || '';
   }
-  args = Array.prototype.slice.call(args).filter(function (a) {return a !== undefined; });
-  var options = {};
-  if (typeof(args[args.length-1])=='object' && args[args.length-1].gas!=undefined) {
-    args[args.length-1].gasPrice = config.ethGasPrice;
-    args[args.length-1].gasLimit = args[args.length-1].gas;
-    delete args[args.length-1].gas;
+  const args = Array.prototype.slice.call(argsIn).filter(a => a !== undefined);
+  let options = {};
+  if (typeof (args[args.length - 1]) === 'object' && args[args.length - 1].gas) {
+    args[args.length - 1].gasPrice = config.ethGasPrice;
+    args[args.length - 1].gasLimit = args[args.length - 1].gas;
+    delete args[args.length - 1].gas;
   }
-  if (utils.isObject(args[args.length-1])) {
+  if (utils.isObject(args[args.length - 1])) {
     options = args.pop();
   }
-  if (functionName=="constructor") {
-    if (options.data.slice(0,2)!="0x") {
-      options.data = '0x' + options.data;
+  if (functionName === 'constructor') {
+    if (options.data.slice(0, 2) !== '0x') {
+      options.data = `0x${options.data}`;
     }
     options.data += encodeConstructorParams(contract.abi, args);
   } else {
     options.to = address;
-    var functionAbi = contract.abi.find(function(element, index, array) {return element.name==functionName});
-    var inputTypes = functionAbi.inputs.map(function(x) {return x.type});
-    var typeName = inputTypes.join();
-    options.data = '0x' + sha3(functionName+'('+typeName+')').slice(0, 8) + coder.encodeParams(inputTypes, args);
+    const functionAbi = contract.abi.find(element => element.name === functionName);
+    const inputTypes = functionAbi.inputs.map(x => x.type);
+    const typeName = inputTypes.join();
+    const data = sha3(`${functionName}(${typeName})`).slice(0, 8) + coder.encodeParams(inputTypes, args);
+    options.data = `0x${data}`;
   }
-  if (options.from == undefined) options.from = fromAddress;
-  web3.eth.sendTransaction(options, function(err, result) {
+  if (!options.from) options.from = fromAddress;
+  web3.eth.sendTransaction(options, (err, result) => {
     callback(err, result);
   });
-}
+};
 
-function send(web3, contract, address, functionName, args, fromAddress, privateKey, nonce, callback) {
-  if (privateKey && privateKey.substring(0,2)=='0x') {
-    privateKey = privateKey.substring(2,privateKey.length);
+utility.send = function send(
+  web3,
+  contract,
+  address,
+  functionName,
+  argsIn,
+  fromAddress,
+  privateKeyIn,
+  nonceIn,
+  callback) {
+  let privateKey = privateKeyIn;
+  if (privateKeyIn && privateKeyIn.substring(0, 2) === '0x') {
+    privateKey = privateKeyIn.substring(2, privateKeyIn.length);
   }
   function encodeConstructorParams(abi, params) {
-      return abi.filter(function (json) {
-        return json.type === 'constructor' && json.inputs.length === params.length;
-      }).map(function (json) {
-        return json.inputs.map(function (input) {
-          return input.type;
-        });
-      }).map(function (types) {
-        return coder.encodeParams(types, params);
-      })[0] || '';
+    return (
+      abi
+        .filter(json => json.type === 'constructor' && json.inputs.length === params.length)
+        .map(json => json.inputs.map(input => input.type))
+        .map(types => coder.encodeParams(types, params))[0] || ''
+    );
   }
-  args = Array.prototype.slice.call(args).filter(function (a) {return a !== undefined; });
-  var options = {};
-  if (typeof(args[args.length-1])=='object' && args[args.length-1].gas!=undefined) {
-    args[args.length-1].gasPrice = config.ethGasPrice;
-    args[args.length-1].gasLimit = args[args.length-1].gas;
-    delete args[args.length-1].gas;
+  const args = Array.prototype.slice.call(argsIn).filter(a => a !== undefined);
+  let options = {};
+  if (typeof args[args.length - 1] === 'object' && args[args.length - 1].gas) {
+    args[args.length - 1].gasPrice = config.ethGasPrice;
+    args[args.length - 1].gasLimit = args[args.length - 1].gas;
+    delete args[args.length - 1].gas;
   }
-  if (utils.isObject(args[args.length-1])) {
+  if (utils.isObject(args[args.length - 1])) {
     options = args.pop();
   }
-  getNextNonce(web3, fromAddress, function(err, nextNonce){
-    if (nonce==undefined || nonce<nextNonce) {
+  utility.getNextNonce(web3, fromAddress, (err, nextNonce) => {
+    let nonce = nonceIn;
+    if (nonceIn === undefined || nonceIn < nextNonce) {
       nonce = nextNonce;
     }
     // console.log("Nonce:", nonce);
     options.nonce = nonce;
-    if (functionName=="constructor") {
-      if (options.data.slice(0,2)!="0x") {
-        options.data = '0x' + options.data;
+    if (functionName === 'constructor') {
+      if (options.data.slice(0, 2) !== '0x') {
+        options.data = `0x${options.data}`;
       }
-      var encodedParams = encodeConstructorParams(contract.abi, args);
+      const encodedParams = encodeConstructorParams(contract.abi, args);
       console.log(encodedParams);
       options.data += encodedParams;
-    } else if (contract==undefined || functionName==undefined) {
+    } else if (!contract || !functionName) {
       options.to = address;
     } else {
       options.to = address;
-      var functionAbi = contract.abi.find(function(element, index, array) {return element.name==functionName});
-      var inputTypes = functionAbi.inputs.map(function(x) {return x.type});
-      var typeName = inputTypes.join();
-      options.data = '0x' + sha3(functionName+'('+typeName+')').slice(0, 8) + coder.encodeParams(inputTypes, args);
+      const functionAbi = contract.abi.find(element => element.name === functionName);
+      const inputTypes = functionAbi.inputs.map(x => x.type);
+      const typeName = inputTypes.join();
+      options.data =
+        `0x${
+        sha3(`${functionName}(${typeName})`).slice(0, 8)
+        }${coder.encodeParams(inputTypes, args)}`;
     }
-    var tx = new Tx(options);
+    const tx = new Tx(options);
     function proxy() {
-      signTx(web3, fromAddress, tx, privateKey, function(err, tx){
-        if (!err) {
-          var serializedTx = tx.serialize().toString('hex');
-          var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api';
-          var formData = {module: 'proxy', action: 'eth_sendRawTransaction', hex: serializedTx};
+      utility.signTx(web3, fromAddress, tx, privateKey, (errSignTx, txSigned) => {
+        if (!errSignTx) {
+          const serializedTx = txSigned.serialize().toString('hex');
+          const url = `https://${config.ethTestnet ? 'testnet' : 'api'}.etherscan.io/api`;
+          const formData = { module: 'proxy', action: 'eth_sendRawTransaction', hex: serializedTx };
           if (config.etherscanAPIKey) formData.apikey = config.etherscanAPIKey;
-          postURL(url, formData, function(err, body){
-            if (!err) {
+          utility.postURL(url, formData, (errPostURL, body) => {
+            if (!errPostURL) {
               try {
-                var result = JSON.parse(body);
-                if (result['result']) {
-                  callback(undefined, {txHash: result['result'], nonce: nonce+1});
-                } else if (result['error']) {
-                  callback(result['error']['message'], {txHash: undefined, nonce: nonce});
+                const result = JSON.parse(body);
+                if (result.result) {
+                  callback(undefined, { txHash: result.result, nonce: nonce + 1 });
+                } else if (result.error) {
+                  callback(result.error.message, { txHash: undefined, nonce });
                 }
-              } catch (err) {
-                callback(err, {txHash: undefined, nonce: nonce});
+              } catch (errTry) {
+                callback(errTry, { txHash: undefined, nonce });
               }
             } else {
-              callback(err, {txHash: undefined, nonce: nonce});
+              callback(err, { txHash: undefined, nonce });
             }
           });
         } else {
-          console.log(err)
-          callback('Failed to sign transaction', {txHash: undefined, nonce: nonce});
+          console.log(err);
+          callback('Failed to sign transaction', { txHash: undefined, nonce });
         }
       });
     }
@@ -319,62 +381,75 @@ function send(web3, contract, address, functionName, args, fromAddress, privateK
         options.from = fromAddress;
         options.gas = options.gasLimit;
         delete options.gasLimit;
-        web3.eth.sendTransaction(options, function(err, hash){
-          if (!err) {
-            callback(undefined, {txHash: hash, nonce: nonce+1});
+        web3.eth.sendTransaction(options, (errSend, hash) => {
+          if (!errSend) {
+            callback(undefined, { txHash: hash, nonce: nonce + 1 });
           } else {
             console.log(err);
             proxy();
           }
-        })
+        });
       } else {
         proxy();
       }
-    } catch (err) {
+    } catch (errSend) {
       proxy();
     }
   });
-}
+};
 
-function estimateGas(web3, contract, address, functionName, args, fromAddress, privateKey, nonce, callback) {
-  if (privateKey && privateKey.substring(0,2)=='0x') {
-    privateKey = privateKey.substring(2,privateKey.length);
+utility.estimateGas = function estimateGas(
+  web3,
+  contract,
+  address,
+  functionName,
+  argsIn,
+  fromAddress,
+  privateKeyIn,
+  nonceIn,
+  callback) {
+  let privateKey = privateKeyIn;
+  if (privateKeyIn && privateKeyIn.substring(0, 2) === '0x') {
+    privateKey = privateKeyIn.substring(2, privateKeyIn.length);
   }
-  args = Array.prototype.slice.call(args).filter(function (a) {return a !== undefined; });
-  var options = {};
-  var functionAbi = contract.abi.find(function(element, index, array) {return element.name==functionName});
-  var inputTypes = functionAbi.inputs.map(function(x) {return x.type});
-  if (typeof(args[args.length-1])=='object' && args[args.length-1].gas!=undefined) {
-    args[args.length-1].gasPrice = config.ethGasPrice;
-    args[args.length-1].gasLimit = args[args.length-1].gas;
-    delete args[args.length-1].gas;
+  const args = Array.prototype.slice.call(argsIn).filter(a => a !== undefined);
+  let options = {};
+  const functionAbi = contract.abi.find(element => element.name === functionName);
+  const inputTypes = functionAbi.inputs.map(x => x.type);
+  if (typeof args[args.length - 1] === 'object' && args[args.length - 1].gas) {
+    args[args.length - 1].gasPrice = config.ethGasPrice;
+    args[args.length - 1].gasLimit = args[args.length - 1].gas;
+    delete args[args.length - 1].gas;
   }
-  if (args.length > inputTypes.length && utils.isObject(args[args.length-1])) {
-      options = args[args.length-1];
+  if (args.length > inputTypes.length && utils.isObject(args[args.length - 1])) {
+    options = args[args.length - 1];
   }
-  getNextNonce(web3, fromAddress, function(err, nextNonce){
-    if (nonce==undefined) {
+  utility.getNextNonce(web3, fromAddress, (err, nextNonce) => {
+    let nonce = nonceIn;
+    if (nonceIn === undefined) {
       nonce = nextNonce;
     }
     options.nonce = nonce;
     options.to = address;
-    var typeName = inputTypes.join();
-    options.data = '0x' + sha3(functionName+'('+typeName+')').slice(0, 8) + coder.encodeParams(inputTypes, args);
-    var tx = new Tx(options);
-    signTx(web3, fromAddress, tx, privateKey, function(err, tx){
-      if (tx) {
-        var serializedTx = tx.serialize().toString('hex');
+    const typeName = inputTypes.join();
+    options.data =
+      `0x${
+      sha3(`${functionName}(${typeName})`).slice(0, 8)
+      }${coder.encodeParams(inputTypes, args)}`;
+    const tx = new Tx(options);
+    utility.signTx(web3, fromAddress, tx, privateKey, (errSignTx, txSigned) => {
+      if (!errSignTx && txSigned) {
         if (web3.currentProvider) {
           try {
-            web3.eth.estimateGas(options, function (err, result) {
-              if (err) {
+            web3.eth.estimateGas(options, (errEstimateGas, result) => {
+              if (errEstimateGas) {
                 callback(err, undefined);
               } else {
                 callback(undefined, result);
               }
             });
-          } catch (err) {
-            callback(err, undefined);
+          } catch (errTry) {
+            callback(errTry, undefined);
           }
         } else {
           callback('No provider set for web3', undefined);
@@ -384,16 +459,20 @@ function estimateGas(web3, contract, address, functionName, args, fromAddress, p
       }
     });
   });
-}
+};
 
-function txReceipt(web3, txHash, callback) {
-  function proxy(){
-    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=proxy&action=eth_GetTransactionReceipt&txhash='+txHash;
-    if (config.etherscanAPIKey) url += '&apikey='+config.etherscanAPIKey;
-    getURL(url, function(err, body){
+utility.txReceipt = function txReceipt(web3, txHash, callback) {
+  function proxy() {
+    let url =
+      `https://${
+      config.ethTestnet ? 'testnet' : 'api'
+      }.etherscan.io/api?module=proxy&action=eth_GetTransactionReceipt&txhash=${
+      txHash}`;
+    if (config.etherscanAPIKey) url += `&apikey=${config.etherscanAPIKey}`;
+    utility.getURL(url, (err, body) => {
       if (!err) {
-        result = JSON.parse(body);
-        callback(undefined, result['result']);
+        const result = JSON.parse(body);
+        callback(undefined, result.result);
       } else {
         callback(err, undefined);
       }
@@ -402,7 +481,7 @@ function txReceipt(web3, txHash, callback) {
   try {
     if (web3.currentProvider) {
       try {
-        web3.eth.getTransactionReceipt(txHash, function (err, result) {
+        web3.eth.getTransactionReceipt(txHash, (err, result) => {
           if (err) {
             proxy();
           } else {
@@ -415,129 +494,160 @@ function txReceipt(web3, txHash, callback) {
     } else {
       proxy();
     }
-  } catch(err) {
+  } catch (err) {
     proxy();
   }
-}
+};
 
-function logs(web3, contract, address, fromBlock, toBlock, callback) {
-  var options = {fromBlock: fromBlock, toBlock: toBlock, address: address};
+utility.logs = function logs(web3, contract, address, fromBlock, toBlock, callback) {
   function decodeEvent(item) {
-    eventAbis = contract.abi.filter(function(eventAbi){return eventAbi.type=='event' && item.topics[0]=='0x'+sha3(eventAbi.name+'('+eventAbi.inputs.map(function(x) {return x.type}).join()+')')});
-    if (eventAbis.length>0) {
-      var eventAbi = eventAbis[0];
-      var event = new SolidityEvent(web3, eventAbi, address);
-      var result = event.decode(item);
+    const eventAbis = contract.abi.filter(eventAbi => (
+        eventAbi.type === 'event' &&
+        item.topics[0] ===
+          `0x${
+            sha3(
+              `${eventAbi.name
+                }(${
+                eventAbi.inputs
+                  .map(x => x.type)
+                  .join()
+                })`)}`
+      ));
+    if (eventAbis.length > 0) {
+      const eventAbi = eventAbis[0];
+      const event = new SolidityEvent(web3, eventAbi, address);
+      const result = event.decode(item);
       callback(undefined, result);
     }
   }
   function proxy(retries) {
-    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=logs&action=getLogs&address='+address+'&fromBlock='+fromBlock+'&toBlock='+toBlock;
-    if (config.etherscanAPIKey) url += '&apikey='+config.etherscanAPIKey;
-    getURL(url, function(err, body){
+    let url =
+      `https://${
+      config.ethTestnet ? 'testnet' : 'api'
+      }.etherscan.io/api?module=logs&action=getLogs&address=${
+      address
+      }&fromBlock=${
+      fromBlock
+      }&toBlock=${
+      toBlock}`;
+    if (config.etherscanAPIKey) url += `&apikey=${config.etherscanAPIKey}`;
+    utility.getURL(url, (err, body) => {
       if (!err) {
         try {
-          var result = JSON.parse(body);
-          var items = result['result'];
-          async.each(items,
-            function(item, callbackForeach){
-              item.blockNumber = hexToDec(item.blockNumber);
-              item.logIndex = hexToDec(item.logIndex);
-              item.transactionIndex = hexToDec(item.transactionIndex);
+          const result = JSON.parse(body);
+          const items = result.result;
+          async.each(
+            items,
+            (item, callbackForeach) => {
+              Object.assign(item, {
+                blockNumber: utility.hexToDec(item.blockNumber),
+                logIndex: utility.hexToDec(item.logIndex),
+                transactionIndex: utility.hexToDec(item.transactionIndex),
+              });
               decodeEvent(item);
               callbackForeach();
             },
-            function(err){
-              setTimeout(function(){
+            () => {
+              setTimeout(() => {
                 proxy(retries);
-              }, 30*1000);
-            }
-          );
-        } catch (err) {
-          if (retries>0) {
-            setTimeout(function(){
-              proxy(retries-1);
+              }, 30 * 1000);
+            });
+        } catch (errTry) {
+          if (retries > 0) {
+            setTimeout(() => {
+              proxy(retries - 1);
             }, 1000);
           }
         }
       }
     });
   }
-  // Geth/Mist/MetaMask web3.eth.filter is slow, so we'll just use the proxy for events
-  // try {
-  //   if (web3.currentProvider) {
-  //     web3.eth.filter(options, function(error, item){
-  //       if (!error) {
-  //         decodeEvent(item);
-  //       } else {
-  //         proxy(1);
-  //       }
-  //     });
-  //   } else {
-  //     proxy(1);
-  //   }
-  // } catch (err) {
-  //   proxy(1);
-  // }
   proxy(1);
-}
+};
 
-function logsOnce(web3, contract, address, fromBlock, toBlock, callback) {
-  var options = {fromBlock: fromBlock, toBlock: toBlock, address: address};
+utility.logsOnce = function logsOnce(web3, contract, address, fromBlock, toBlock, callback) {
   function decodeEvent(item) {
-    eventAbis = contract.abi.filter(function(eventAbi){return eventAbi.type=='event' && item.topics[0]=='0x'+sha3(eventAbi.name+'('+eventAbi.inputs.map(function(x) {return x.type}).join()+')')});
-    if (eventAbis.length>0) {
-      var eventAbi = eventAbis[0];
-      var event = new SolidityEvent(web3, eventAbi, address);
-      var result = event.decode(item);
+    const eventAbis = contract.abi.filter(eventAbi => (
+        eventAbi.type === 'event' &&
+        item.topics[0] ===
+          `0x${
+            sha3(
+              `${eventAbi.name
+                }(${
+                eventAbi.inputs
+                  .map(x => x.type)
+                  .join()
+                })`)}`
+      ));
+    if (eventAbis.length > 0) {
+      const eventAbi = eventAbis[0];
+      const event = new SolidityEvent(web3, eventAbi, address);
+      const result = event.decode(item);
       return result;
-    } else {
-      return undefined;
     }
+    return undefined;
   }
   function proxy(retries) {
-    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=logs&action=getLogs&address='+address+'&fromBlock='+fromBlock+'&toBlock='+toBlock;
-    if (config.etherscanAPIKey) url += '&apikey='+config.etherscanAPIKey;
-    getURL(url, function(err, body){
-      if (!err) {
-        try {
-          var result = JSON.parse(body);
-          var items = result['result'];
-          async.map(items,
-            function(item, callbackMap){
-              item.blockNumber = hexToDec(item.blockNumber);
-              item.logIndex = hexToDec(item.logIndex);
-              item.transactionIndex = hexToDec(item.transactionIndex);
-              var event = decodeEvent(item);
-              callbackMap(null, event);
-            },
-            function(err, events){
-              callback(null, events);
+    let url =
+      `https://${
+      config.ethTestnet ? 'testnet' : 'api'
+      }.etherscan.io/api?module=logs&action=getLogs&address=${
+      address
+      }&fromBlock=${
+      fromBlock
+      }&toBlock=${
+      toBlock}`;
+    if (config.etherscanAPIKey) url += `&apikey=${config.etherscanAPIKey}`;
+    utility.getURL(
+      url,
+      (err, body) => {
+        if (!err) {
+          try {
+            const result = JSON.parse(body);
+            const items = result.result;
+            async.map(
+              items,
+              (item, callbackMap) => {
+                Object.assign(item, {
+                  blockNumber: utility.hexToDec(item.blockNumber),
+                  logIndex: utility.hexToDec(item.logIndex),
+                  transactionIndex: utility.hexToDec(item.transactionIndex),
+                });
+                const event = decodeEvent(item);
+                callbackMap(null, event);
+              },
+              (errMap, events) => {
+                callback(null, events);
+              });
+          } catch (errTry) {
+            if (retries > 0) {
+              proxy(retries - 1);
+            } else {
+              callback(null, []);
             }
-          );
-        } catch (err) {
-          if (retries>0) {
-            proxy(retries-1)
-          } else {
-            callback(null, []);
           }
+        } else {
+          callback(null, []);
         }
-      } else {
-        callback(null, []);
-      }
-    }, {timeout: 1500});
+      },
+      { timeout: 1500 });
   }
   proxy(1);
-}
+};
 
-function getBalance(web3, address, callback) {
-  function proxy(){
-    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=account&action=balance&address='+address+'&tag=latest';
-    if (config.etherscanAPIKey) url += '&apikey='+config.etherscanAPIKey;
-    getURL(url, function(err, body){
+utility.getBalance = function getBalance(web3, address, callback) {
+  function proxy() {
+    let url =
+      `https://${
+      config.ethTestnet ? 'testnet' : 'api'
+      }.etherscan.io/api?module=account&action=balance&address=${
+      address
+      }&tag=latest`;
+    if (config.etherscanAPIKey) url += `&apikey=${config.etherscanAPIKey}`;
+    utility.getURL(url, (err, body) => {
       if (!err) {
-        result = JSON.parse(body);
-        callback(undefined, result['result']);
+        const result = JSON.parse(body);
+        callback(undefined, result.result);
       } else {
         callback(err, undefined);
       }
@@ -545,7 +655,7 @@ function getBalance(web3, address, callback) {
   }
   try {
     if (web3.currentProvider) {
-      web3.eth.getBalance(address, function(err, balance){
+      web3.eth.getBalance(address, (err, balance) => {
         if (!err) {
           callback(undefined, balance);
         } else {
@@ -555,19 +665,24 @@ function getBalance(web3, address, callback) {
     } else {
       proxy();
     }
-  } catch(err) {
+  } catch (err) {
     proxy();
   }
-}
+};
 
-function getCode(web3, address, callback) {
-  function proxy(){
-    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=proxy&action=eth_getCode&address='+address+'&tag=latest';
-    if (config.etherscanAPIKey) url += '&apikey='+config.etherscanAPIKey;
-    getURL(url, function(err, body){
+utility.getCode = function getCode(web3, address, callback) {
+  function proxy() {
+    let url =
+      `https://${
+      config.ethTestnet ? 'testnet' : 'api'
+      }.etherscan.io/api?module=proxy&action=eth_getCode&address=${
+      address
+      }&tag=latest`;
+    if (config.etherscanAPIKey) url += `&apikey=${config.etherscanAPIKey}`;
+    utility.getURL(url, (err, body) => {
       if (!err) {
-        result = JSON.parse(body);
-        callback(undefined, result['result']);
+        const result = JSON.parse(body);
+        callback(undefined, result.result);
       } else {
         callback(err, undefined);
       }
@@ -575,7 +690,7 @@ function getCode(web3, address, callback) {
   }
   try {
     if (web3.currentProvider) {
-      web3.eth.getCode(address, function(err, code){
+      web3.eth.getCode(address, (err, code) => {
         if (!err) {
           callback(undefined, code);
         } else {
@@ -585,61 +700,31 @@ function getCode(web3, address, callback) {
     } else {
       proxy();
     }
-  } catch(err) {
+  } catch (err) {
     proxy();
   }
-}
+};
 
-function getNextNonce(web3, address, callback) {
-  function proxy(){
-    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=proxy&action=eth_GetTransactionCount&address='+address+'&tag=latest';
-    if (config.etherscanAPIKey) url += '&apikey='+config.etherscanAPIKey;
-    getURL(url, function(err, body){
-      if (!err) {
-        result = JSON.parse(body);
-        var nextNonce = Number(result['result']);
-        callback(undefined, nextNonce);
-      } else {
-        callback(err, undefined);
-      }
-    });
-  }
-  try {
-    if (web3.currentProvider) {
-      web3.eth.getTransactionCount(address, function(err, result){
-        if (!err) {
-          var nextNonce = Number(result);
-          //Note. initial nonce is 2^20 on testnet, but getTransactionCount already starts at 2^20.
-          callback(undefined, nextNonce);
-        } else {
-          proxy();
-        }
-      });
-    } else {
-      proxy();
-    }
-  } catch(err) {
-    proxy();
-  }
-}
-
-function blockNumber(web3, callback) {
+utility.blockNumber = function blockNumber(web3, callback) {
   function proxy() {
-    var url = 'https://'+(config.ethTestnet ? 'testnet' : 'api')+'.etherscan.io/api?module=proxy&action=eth_BlockNumber';
-    if (config.etherscanAPIKey) url += '&apikey='+config.etherscanAPIKey;
-    getURL(url, function(err, body){
+    let url =
+      `https://${
+      config.ethTestnet ? 'testnet' : 'api'
+      }.etherscan.io/api?module=proxy&action=eth_BlockNumber`;
+    if (config.etherscanAPIKey) url += `&apikey=${config.etherscanAPIKey}`;
+    utility.getURL(url, (err, body) => {
       if (!err) {
-        var result = JSON.parse(body);
-        callback(undefined, Number(hexToDec(result['result'])));
+        const result = JSON.parse(body);
+        callback(undefined, Number(utility.hexToDec(result.result)));
       } else {
         callback(err, undefined);
       }
     });
   }
   if (web3.currentProvider) {
-    web3.eth.getBlockNumber(function(err, blockNumber){
+    web3.eth.getBlockNumber((err, result) => {
       if (!err) {
-        callback(undefined, Number(blockNumber));
+        callback(undefined, Number(result));
       } else {
         proxy();
       }
@@ -647,93 +732,103 @@ function blockNumber(web3, callback) {
   } else {
     proxy();
   }
-}
+};
 
-function signTx(web3, address, tx, privateKey, callback) {
+utility.signTx = function signTx(web3, address, txIn, privateKey, callback) {
+  const tx = txIn;
   if (privateKey) {
     tx.sign(new Buffer(privateKey, 'hex'));
     callback(undefined, tx);
   } else {
-    var msgHash = '0x'+tx.hash(false).toString('hex');
-    web3.eth.sign(address, msgHash, function(err, sig) {
+    const msgHash = `0x${tx.hash(false).toString('hex')}`;
+    web3.eth.sign(address, msgHash, (err, sigResult) => {
       if (!err) {
         try {
-          function hexToUint8array(s) {
-            if (s.slice(0,2)=='0x') s=s.slice(2)
-            var ua = new Uint8Array(s.length);
-            for (var i = 0; i < s.length; i++) {
-              ua[i] = s.charCodeAt(i);
-            }
-            return ua;
-          }
-          var r = sig.slice(0, 66);
-          var s = '0x' + sig.slice(66, 130);
-          var v = web3.toDecimal('0x' + sig.slice(130, 132));
-          if (v!=27 && v!=28) v+=27;
-          sig = {r: hexToUint8array(r), s: hexToUint8array(s), v: hexToUint8array(v.toString(16))};
+          const r = sigResult.slice(0, 66);
+          const s = `0x${sigResult.slice(66, 130)}`;
+          let v = web3.toDecimal(`0x${sigResult.slice(130, 132)}`);
+          if (v !== 27 && v !== 28) v += 27;
           tx.r = r;
           tx.s = s;
           tx.v = v;
           callback(undefined, tx);
-        } catch (err) {
-          callback(err, undefined);
+        } catch (errTry) {
+          callback(errTry, undefined);
         }
       } else {
         callback(err, undefined);
       }
     });
   }
-}
+};
 
-function sign(web3, address, msgToSign, privateKey, callback) {
-  if (msgToSign.substring(0,2)!='0x') msgToSign = '0x' + msgToSign;
-  function prefixMessage(msgToSign) {
-    var msg = new Buffer(msgToSign.slice(2), 'hex');
-    msg = Buffer.concat([new Buffer('\x19Ethereum Signed Message:\n' + msg.length.toString()), msg])
-    msg = web3.sha3('0x'+msg.toString('hex'), {encoding: 'hex'});
+utility.sign = function sign(web3, address, msgToSignIn, privateKeyIn, callback) {
+  let msgToSign = msgToSignIn;
+  if (msgToSign.substring(0, 2) !== '0x') msgToSign = `0x${msgToSign}`;
+  function prefixMessage(msgIn) {
+    let msg = msgIn;
     msg = new Buffer(msg.slice(2), 'hex');
-    return '0x'+msg.toString('hex');
+    msg = Buffer.concat([
+      new Buffer(`\x19Ethereum Signed Message:\n${msg.length.toString()}`),
+      msg]);
+    msg = web3.sha3(`0x${msg.toString('hex')}`, { encoding: 'hex' });
+    msg = new Buffer(msg.slice(2), 'hex');
+    return `0x${msg.toString('hex')}`;
   }
-  function testSig(msg, sig, address) {
-    var recoveredAddress = '0x'+ethUtil.pubToAddress(ethUtil.ecrecover(msg, sig.v, sig.r, sig.s)).toString('hex');
-    return recoveredAddress==address;
+  function testSig(msg, sig) {
+    const recoveredAddress =
+      `0x${ethUtil.pubToAddress(ethUtil.ecrecover(msg, sig.v, sig.r, sig.s)).toString('hex')}`;
+    return recoveredAddress === address;
   }
-  if (privateKey) {
-    if (privateKey.substring(0,2)=='0x') privateKey = privateKey.substring(2,privateKey.length);
+  if (privateKeyIn) {
+    let privateKey = privateKeyIn;
+    if (privateKey.substring(0, 2) === '0x') privateKey = privateKey.substring(2, privateKey.length);
     msgToSign = prefixMessage(msgToSign);
     try {
-      var sig = ethUtil.ecsign(new Buffer(msgToSign.slice(2), 'hex'), new Buffer(privateKey, 'hex'));
-      var r = '0x'+sig.r.toString('hex');
-      var s = '0x'+sig.s.toString('hex');
-      var v = sig.v;
-      var result = {r: r, s: s, v: v};
+      const sig = ethUtil.ecsign(
+        new Buffer(msgToSign.slice(2), 'hex'),
+        new Buffer(privateKey, 'hex'));
+      const r = `0x${sig.r.toString('hex')}`;
+      const s = `0x${sig.s.toString('hex')}`;
+      const v = sig.v;
+      const result = { r, s, v };
       callback(undefined, result);
     } catch (err) {
       callback(err, undefined);
     }
   } else {
-    web3.version.getNode(function(error, node){
-      //these nodes still use old-style eth_sign
-      if (node != undefined && (node.match('Parity') != null || node.match('TestRPC') != null || node.match('MetaMask') != null)) {
+    web3.version.getNode((error, node) => {
+      // these nodes still use old-style eth_sign
+      if (
+        node &&
+        (node.match('Parity') ||
+          node.match('TestRPC') ||
+          node.match('MetaMask'))
+      ) {
         msgToSign = prefixMessage(msgToSign);
       }
-      web3.eth.sign(address, msgToSign, function(err, sig) {
+      web3.eth.sign(address, msgToSign, (err, sigResult) => {
         if (err) {
           callback('Failed to sign message', undefined);
         } else {
-          sig = ethUtil.fromRpcSig(sig);
-          var msg;
-          if (node != undefined && (node.match('Parity') != null || node.match('TestRPC') != null || node.match('MetaMask') != null)) {
+          const sig = ethUtil.fromRpcSig(sigResult);
+          let msg;
+          if (
+            node &&
+            (node.match('Parity') ||
+              node.match('TestRPC') ||
+              node.match('MetaMask'))
+          ) {
             msg = msgToSign;
           } else {
             msg = prefixMessage(msgToSign);
           }
-          msg = new Buffer(msg.slice(2),'hex');
+          msg = new Buffer(msg.slice(2), 'hex');
           if (testSig(msg, sig, address)) {
-            var r = '0x'+sig.r.toString('hex');
-            var s = '0x'+sig.s.toString('hex');
-            var v = sig.v;
-            var result = {r: r, s: s, v: v};
+            const r = `0x${sig.r.toString('hex')}`;
+            const s = `0x${sig.s.toString('hex')}`;
+            const v = sig.v;
+            const result = { r, s, v };
             callback(undefined, result);
           } else {
             callback('Failed to sign message', undefined);
@@ -742,341 +837,264 @@ function sign(web3, address, msgToSign, privateKey, callback) {
       });
     });
   }
-}
+};
 
-function verify(web3, address, v, r, s, value, callback) {
-  address = address.toLowerCase();
-  if (r.substring(0,2)=='0x') r=r.substring(2,r.length);
-  if (s.substring(0,2)=='0x') s=s.substring(2,s.length);
-  if (value.substring(0,2)=='0x') value=value.substring(2,value.length);
-  var pubKey = ethUtil.ecrecover(new Buffer(value, 'hex'), Number(v), new Buffer(r, 'hex'), new Buffer(s, 'hex'));
-  var result = address == '0x'+ethUtil.pubToAddress(new Buffer(pubKey, 'hex')).toString('hex');
+utility.verify = function verify(web3, addressIn, // eslint-disable-line consistent-return
+  v, rIn, sIn, valueIn, callback) {
+  const address = addressIn.toLowerCase();
+  let r = rIn;
+  let s = sIn;
+  let value = valueIn;
+  if (r.substring(0, 2) === '0x') r = r.substring(2, r.length);
+  if (s.substring(0, 2) === '0x') s = s.substring(2, s.length);
+  if (value.substring(0, 2) === '0x') value = value.substring(2, value.length);
+  const pubKey = ethUtil.ecrecover(
+    new Buffer(value, 'hex'),
+    Number(v),
+    new Buffer(r, 'hex'),
+    new Buffer(s, 'hex'));
+  const result = address === `0x${ethUtil.pubToAddress(new Buffer(pubKey, 'hex')).toString('hex')}`;
   if (callback) {
     callback(undefined, result);
   } else {
     return result;
   }
-}
+};
 
-function createAccount() {
-  var dk = keythereum.create();
-  var privateKey = dk.privateKey;
-  var address = ethUtil.privateToAddress(privateKey);
+utility.createAccount = function createAccount() {
+  const dk = keythereum.create();
+  let privateKey = dk.privateKey;
+  let address = ethUtil.privateToAddress(privateKey);
   address = ethUtil.toChecksumAddress(address.toString('hex'));
   privateKey = privateKey.toString('hex');
-  return {address: address, privateKey: privateKey};
-}
+  return { address, privateKey };
+};
 
-function verifyPrivateKey(addr, privateKey) {
-  if (privateKey && privateKey.substring(0,2)!='0x') {
-    privateKey = '0x'+privateKey;
+utility.verifyPrivateKey = function verifyPrivateKey(addr, privateKeyIn) {
+  let privateKey = privateKeyIn;
+  if (privateKey && privateKey.substring(0, 2) !== '0x') {
+    privateKey = `0x${privateKey}`;
   }
-  return addr == ethUtil.toChecksumAddress('0x'+ethUtil.privateToAddress(privateKey).toString('hex'));
-}
+  return (
+    addr === ethUtil.toChecksumAddress(`0x${ethUtil.privateToAddress(privateKey).toString('hex')}`)
+  );
+};
 
-function toChecksumAddress(addr) {
-  if (addr && addr.substring(0,2)!='0x') {
-    addr = '0x'+addr;
+utility.toChecksumAddress = function toChecksumAddress(addrIn) {
+  let addr = addrIn;
+  if (addr && addr.substring(0, 2) !== '0x') {
+    addr = `0x${addr}`;
   }
   return ethUtil.toChecksumAddress(addr);
-}
+};
 
-function loadContract(web3, sourceCode, address, callback) {
-  readFile(sourceCode+'.bytecode', function(err, bytecode){
-    readFile(sourceCode+'.interface', function(err, abi){
-      abi = JSON.parse(abi);
-      bytecode = JSON.parse(bytecode);
-      var contract = web3.eth.contract(abi);
-      contract = contract.at(address);
-      callback(undefined, contract);
-    });
+utility.loadContract = function loadContract(web3, sourceCode, address, callback) {
+  utility.readFile(`${sourceCode}.interface`, (errAbi, resultAbi) => {
+    const abi = JSON.parse(resultAbi);
+    let contract = web3.eth.contract(abi);
+    contract = contract.at(address);
+    callback(undefined, contract);
   });
-}
+};
 
-function deployContract(web3, sourceFile, contractName, constructorParams, address, callback) {
-  readFile(sourceFile+'.bytecode', function(err, bytecode){
-    readFile(sourceFile+'.interface', function(err, abi){
-      readFile(sourceFile, function(err, source){
-        if (abi && bytecode) {
-          abi = JSON.parse(abi);
-          bytecode = JSON.parse(bytecode);
-        } else {
-          callback('Could not load bytecode and ABI', undefined);
-          // var solc = require('solc');
-          // var compiled = solc.compile(source, 1).contracts[contractName];
-          // abi = JSON.parse(compiled.interface);
-          // bytecode = compiled.bytecode;
-        }
-        var contract = web3.eth.contract(abi);
-        send(web3, contract, undefined, 'constructor', constructorParams.concat([{from: address, data: bytecode, gas: 4700000, gasPrice: config.ethGasPrice}]), address, undefined, 0, function(err, result) {
-          var txHash = result.txHash;
-          var address = undefined;
-          async.whilst(
-            function () { return address==undefined; },
-            function (callbackWhilst) {
-                setTimeout(function () {
-                  txReceipt(web3, txHash, function(err, receipt) {
+utility.deployContract = function deployContract(web3, sourceFile,
+  contractName, constructorParams, address, callback) {
+  utility.readFile(`${sourceFile}.bytecode`, (errBytecode, resultBytecode) => {
+    utility.readFile(`${sourceFile}.interface`, (errAbi, resultAbi) => {
+      if (resultAbi && resultBytecode) {
+        const abi = JSON.parse(resultAbi);
+        const bytecode = JSON.parse(resultBytecode);
+        const contract = web3.eth.contract(abi);
+        utility.send(
+          web3,
+          contract,
+          undefined,
+          'constructor',
+          constructorParams.concat([
+            { from: address, data: bytecode, gas: 4700000, gasPrice: config.ethGasPrice },
+          ]),
+          address,
+          undefined,
+          0,
+          (errSend, result) => {
+            const txHash = result.txHash;
+            let contractAddr;
+            async.whilst(
+              () => contractAddr === undefined,
+              (callbackWhilst) => {
+                setTimeout(() => {
+                  utility.txReceipt(web3, txHash, (err, receipt) => {
                     if (receipt) {
-                      address = receipt.contractAddress;
+                      contractAddr = receipt.contractAddress;
                     }
                     callbackWhilst(null);
                   });
-                }, 1*1000);
-            },
-            function (err) {
-              callback(undefined, address);
-            }
-          );
-        });
-      });
+                }, 1 * 1000);
+              },
+              () => {
+                callback(undefined, address);
+              });
+          });
+      } else {
+        callback('Could not load bytecode and ABI', undefined);
+      }
     });
   });
-}
+};
 
-function zeroPad(num, places) {
-  var zero = places - num.toString().length + 1;
-  return Array(+(zero > 0 && zero)).join("0") + num;
-}
+utility.zeroPad = function zeroPad(num, places) {
+  const zero = (places - num.toString().length) + 1;
+  return Array(+(zero > 0 && zero)).join('0') + num;
+};
 
-function decToHex(dec, length) {
-  if (typeof(length)==='undefined') length = 32;
+utility.decToHex = function decToHex(dec, lengthIn) {
+  let length = lengthIn;
+  if (!length) length = 32;
   if (dec < 0) {
     // return convertBase((Math.pow(2, length) + decStr).toString(), 10, 16);
     return (new BigNumber(2)).pow(length).add(new BigNumber(dec)).toString(16);
-  } else {
-    var result = null;
-    try {
-      result = convertBase(dec.toString(), 10, 16);
-    } catch (err) {
-      result = null;
-    }
-    if (result) {
-      return result;
-    } else {
-      return (new BigNumber(dec)).toString(16);
-    }
   }
-}
+  let result = null;
+  try {
+    result = utility.convertBase(dec.toString(), 10, 16);
+  } catch (err) {
+    result = null;
+  }
+  if (result) {
+    return result;
+  }
+  return (new BigNumber(dec)).toString(16);
+};
 
-function hexToDec(hexStr, length) { //length implies this is a two's complement number
+utility.hexToDec = function hexToDec(hexStrIn, length) {
+  // length implies this is a two's complement number
+  let hexStr = hexStrIn;
   if (hexStr.substring(0, 2) === '0x') hexStr = hexStr.substring(2);
   hexStr = hexStr.toLowerCase();
-  if (typeof(length)==='undefined'){
-    return convertBase(hexStr, 16, 10);
-  } else {
-    var max = Math.pow(2, length);
-    var answer = convertBase(hexStr, 16, 10);
-    if (answer>max/2) {
-      answer = max;
-    }
-    return answer;
+  if (!length) {
+    return utility.convertBase(hexStr, 16, 10);
   }
-}
+  const max = Math.pow(2, length); // eslint-disable-line no-restricted-properties
+  const answer = utility.convertBase(hexStr, 16, 10);
+  return answer > max / 2 ? max : answer;
+};
 
-function pack(data, lengths) {
-  packed = "";
-  for (var i=0; i<lengths.length; i++) {
-    if (typeof(data[i])=='string' && data[i].substring(0,2)=='0x') {
-      if (data[i].substring(0,2)=='0x') data[i] = data[i].substring(2);
-      packed += zeroPad(data[i], lengths[i]/4);
-    } else if (typeof(data[i])!='number' && /[a-f]/.test(data[i])) {
-      if (data[i].substring(0,2)=='0x') data[i] = data[i].substring(2);
-      packed += zeroPad(data[i], lengths[i]/4);
+utility.pack = function pack(dataIn, lengths) {
+  let packed = '';
+  const data = dataIn.map(x => x);
+  for (let i = 0; i < lengths.length; i += 1) {
+    if (typeof (data[i]) === 'string' && data[i].substring(0, 2) === '0x') {
+      if (data[i].substring(0, 2) === '0x') data[i] = data[i].substring(2);
+      packed += utility.zeroPad(data[i], lengths[i] / 4);
+    } else if (typeof (data[i]) !== 'number' && /[a-f]/.test(data[i])) {
+      if (data[i].substring(0, 2) === '0x') data[i] = data[i].substring(2);
+      packed += utility.zeroPad(data[i], lengths[i] / 4);
     } else {
       // packed += zeroPad(new BigNumber(data[i]).toString(16), lengths[i]/4);
-      packed += zeroPad(decToHex(data[i], lengths[i]), lengths[i]/4);
+      packed += utility.zeroPad(utility.decToHex(data[i], lengths[i]), lengths[i] / 4);
     }
   }
   return packed;
-}
+};
 
-function unpack(str, lengths) {
-  var data = [];
-  var length = 0;
-  for (var i=0; i<lengths.length; i++) {
-    data[i] = parseInt(hexToDec(str.substr(length,lengths[i]/4), lengths[i]));
-    length += lengths[i]/4;
+utility.unpack = function unpack(str, lengths) {
+  const data = [];
+  let length = 0;
+  for (let i = 0; i < lengths.length; i += 1) {
+    data[i] = parseInt(utility.hexToDec(str.substr(length, lengths[i] / 4), lengths[i]), 10);
+    length += lengths[i] / 4;
   }
   return data;
-}
+};
 
-function convertBase(str, fromBase, toBase) {
-  var digits = parseToDigitsArray(str, fromBase);
+utility.convertBase = function convertBase(str, fromBase, toBase) {
+  const digits = utility.parseToDigitsArray(str, fromBase);
   if (digits === null) return null;
-  var outArray = [];
-  var power = [1];
-  for (var i = 0; i < digits.length; i++) {
+  let outArray = [];
+  let power = [1];
+  for (let i = 0; i < digits.length; i += 1) {
     if (digits[i]) {
-      outArray = add(outArray, multiplyByNumber(digits[i], power, toBase), toBase);
+      outArray = utility.add(outArray, utility.multiplyByNumber(digits[i], power, toBase), toBase);
     }
-    power = multiplyByNumber(fromBase, power, toBase);
+    power = utility.multiplyByNumber(fromBase, power, toBase);
   }
-  var out = '';
-  for (var i = outArray.length-1; i >= 0; i--) {
+  let out = '';
+  for (let i = outArray.length - 1; i >= 0; i -= 1) {
     out += outArray[i].toString(toBase);
   }
-  if (out=='') out = 0;
+  if (out === '') out = 0;
   return out;
-}
+};
 
-function parseToDigitsArray(str, base) {
-  var digits = str.split('');
-  var ary = [];
-  for (var i = digits.length-1; i >= 0; i--) {
-    var n = parseInt(digits[i], base);
+utility.parseToDigitsArray = function parseToDigitsArray(str, base) {
+  const digits = str.split('');
+  const ary = [];
+  for (let i = digits.length - 1; i >= 0; i -= 1) {
+    const n = parseInt(digits[i], base);
     if (isNaN(n)) return null;
     ary.push(n);
   }
   return ary;
-}
+};
 
-function add(x, y, base) {
-  var z = [];
-  var n = Math.max(x.length, y.length);
-  var carry = 0;
-  var i = 0;
+utility.add = function add(x, y, base) {
+  const z = [];
+  const n = Math.max(x.length, y.length);
+  let carry = 0;
+  let i = 0;
   while (i < n || carry) {
-    var xi = i < x.length ? x[i] : 0;
-    var yi = i < y.length ? y[i] : 0;
-    var zi = carry + xi + yi;
+    const xi = i < x.length ? x[i] : 0;
+    const yi = i < y.length ? y[i] : 0;
+    const zi = carry + xi + yi;
     z.push(zi % base);
     carry = Math.floor(zi / base);
-    i++;
+    i += 1;
   }
   return z;
-}
+};
 
-function multiplyByNumber(num, x, base) {
+utility.multiplyByNumber = function multiplyByNumber(numIn, x, base) {
+  let num = numIn;
   if (num < 0) return null;
-  if (num == 0) return [];
-  var result = [];
-  var power = x;
-  while (true) {
-    if (num & 1) {
-      result = add(result, power, base);
+  if (num === 0) return [];
+  let result = [];
+  let power = x;
+  while (true) { // eslint-disable-line no-constant-condition
+    if (num & 1) { // eslint-disable-line no-bitwise
+      result = utility.add(result, power, base);
     }
-    num = num >> 1;
+    num = num >> 1; // eslint-disable-line operator-assignment, no-bitwise
     if (num === 0) break;
-    power = add(power, power, base);
+    power = utility.add(power, power, base);
   }
   return result;
-}
+};
 
-function getRandomInt(min, max) {
+utility.getRandomInt = function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
-}
+};
 
-function streamGitterMessages(gitterMessages, callback) {
-  var heartbeat = " \n";
-  var options = {
-    hostname: config.gitterStream,
-    port:     443,
-    path:     '/v1/rooms/' + config.gitterRoomID + '/chatMessages',
-    method:   'GET',
-    headers:  {'Authorization': 'Bearer ' + config.gitterToken}
-  };
-  var req = https.request(options, function(res) {
-    res.on('data', function(chunk) {
-      var msg = chunk.toString();
-      if (msg !== heartbeat) {
-        try {
-          var message = JSON.parse(msg);
-          if (!gitterMessages[message.id]) {
-            gitterMessages[message.id] = JSON.parse(message.text);
-            callback(undefined, true);
-          }
-        } catch (err) {
-          callback(err, false);
-        }
-      }
-    });
-  });
-  req.on('error', function(err) {
-    callback(err, false);
-  });
-  req.end();
-}
-
-function getGitterMessages(gitterMessages, callback) {
-  var numMessages = undefined;
-  var skip = 0;
-  var messages = [];
-  var pages = 20;
-  var newMessagesFound = 0;
-  var perPage = 100;
-  async.until(
-    function () { return pages <= 0; },
-    function (callbackUntil) {
-      pages -= 1;
-      var url = config.gitterHost + '/v1/rooms/'+config.gitterRoomID+'/chatMessages?access_token='+config.gitterToken+'&limit='+perPage+'&skip='+skip;
-      getURL(url, function(err, body){
-        if (!err) {
-          var data = JSON.parse(body);
-          if (data && data.length>0) {
-            skip += perPage;
-            data.forEach(function(message){
-              if (gitterMessages[message.id]) {
-                pages = 0;
-              } else {
-                try {
-                  gitterMessages[message.id] = JSON.parse(message.text);
-                  newMessagesFound++;
-                } catch (err) {
-                }
-              }
-            });
-          } else {
-            pages = 0;
-          }
-        } else {
-          numMessages = 0;
-        }
-        callbackUntil(null);
-      });
-    },
-    function (err) {
-      if (err) {
-        callback(err, undefined);
-      } else {
-        callback(undefined, {gitterMessages: gitterMessages, newMessagesFound: newMessagesFound});
-      }
-    }
-  );
-}
-
-function postGitterMessage(message, callback) {
-  var url = config.gitterHost + '/v1/rooms/'+config.gitterRoomID+'/chatMessages?access_token='+config.gitterToken;
-  postURL(url, {text: message}, function(err, body){
-    if (err) {
-      if (callback) callback('Failure', false);
-    } else if (httpResponse.statusCode==429) {
-      if (callback) callback('The offchain order book is receiving too many requests. Please wait a minute and try again.', false);
-    } else {
-      if (callback) callback(undefined, true);
-    }
-  });
-}
-
+/* eslint-disable */
 if (!Object.prototype.find) {
-  Object.values = function(obj) {
-    return Object.keys(obj).map(function(key){return obj[key]});
+  Object.values = function (obj) {
+    return Object.keys(obj).map(key => obj[key]);
   };
 }
 
 if (!Array.prototype.find) {
-  Array.prototype.find = function(predicate) {
+  Array.prototype.find = function (predicate) {
     if (this === null) {
       throw new TypeError('Array.prototype.find called on null or undefined');
     }
     if (typeof predicate !== 'function') {
       throw new TypeError('predicate must be a function');
     }
-    var list = Object(this);
-    var length = list.length >>> 0;
-    var thisArg = arguments[1];
-    var value;
+    const list = Object(this);
+    const length = list.length >>> 0;
+    const thisArg = arguments[1];
+    let value;
 
-    for (var i = 0; i < length; i++) {
+    for (const i = 0; i < length; i++) {
       value = list[i];
       if (predicate.call(thisArg, value, i, list)) {
         return value;
@@ -1086,19 +1104,18 @@ if (!Array.prototype.find) {
   };
 }
 
-if (typeof Object.assign != 'function') {
+if (typeof Object.assign !== 'function') {
   (function () {
     Object.assign = function (target) {
-      'use strict';
       if (target === undefined || target === null) {
         throw new TypeError('Cannot convert undefined or null to object');
       }
 
-      var output = Object(target);
-      for (var index = 1; index < arguments.length; index++) {
-        var source = arguments[index];
+      const output = Object(target);
+      for (const index = 1; index < arguments.length; index++) {
+        const source = arguments[index];
         if (source !== undefined && source !== null) {
-          for (var nextKey in source) {
+          for (const nextKey in source) {
             if (source.hasOwnProperty(nextKey)) {
               output[nextKey] = source[nextKey];
             }
@@ -1107,30 +1124,31 @@ if (typeof Object.assign != 'function') {
       }
       return output;
     };
-  })();
+  }());
 }
 
-Array.prototype.getUnique = function(){
-   var u = {}, a = [];
-   for(var i = 0, l = this.length; i < l; ++i){
-      if(u.hasOwnProperty(this[i])) {
-         continue;
-      }
-      a.push(this[i]);
-      u[this[i]] = 1;
-   }
-   return a;
-}
+Array.prototype.getUnique = function () {
+  const u = {},
+    a = [];
+  for (const i = 0, l = this.length; i < l; ++i) {
+    if (u.hasOwnProperty(this[i])) {
+      continue;
+    }
+    a.push(this[i]);
+    u[this[i]] = 1;
+  }
+  return a;
+};
 
-Array.prototype.max = function() {
+Array.prototype.max = function () {
   return Math.max.apply(null, this);
 };
 
-Array.prototype.min = function() {
+Array.prototype.min = function () {
   return Math.min.apply(null, this);
 };
 
-Array.prototype.equals = function(b) {
+Array.prototype.equals = function (b) {
   if (this === b) return true;
   if (this == null || b == null) return false;
   if (this.length != b.length) return false;
@@ -1138,54 +1156,21 @@ Array.prototype.equals = function(b) {
   // If you don't care about the order of the elements inside
   // the array, you should sort both arrays here.
 
-  for (var i = 0; i < this.length; ++i) {
+  for (const i = 0; i < this.length; ++i) {
     if (this[i] !== b[i]) return false;
   }
   return true;
-}
+};
 
-Math.sign = Math.sign || function(x) {
-  x = +x; // convert to a number
-  if (x === 0 || isNaN(x)) {
-    return x;
-  }
-  return x > 0 ? 1 : -1;
-}
+Math.sign =
+  Math.sign ||
+  function (x) {
+    x = +x; // convert to a number
+    if (x === 0 || isNaN(x)) {
+      return x;
+    }
+    return x > 0 ? 1 : -1;
+  };
 
-exports.decToHex = decToHex;
-exports.hexToDec = hexToDec;
-exports.roundToNearest = roundToNearest;
-exports.pack = pack;
-exports.unpack = unpack;
-exports.getBalance = getBalance;
-exports.getCode = getCode;
-exports.getNextNonce = getNextNonce;
-exports.send = send;
-exports.call = call;
-exports.testSend = testSend;
-exports.testCall = testCall;
-exports.estimateGas = estimateGas;
-exports.txReceipt = txReceipt;
-exports.logs = logs;
-exports.logsOnce = logsOnce;
-exports.blockNumber = blockNumber;
-exports.sign = sign;
-exports.verify = verify;
-exports.createAccount = createAccount;
-exports.verifyPrivateKey = verifyPrivateKey;
-exports.toChecksumAddress = toChecksumAddress;
-exports.readCookie = readCookie;
-exports.createCookie = createCookie;
-exports.eraseCookie = eraseCookie;
-exports.getURL = getURL;
-exports.postURL = postURL;
-exports.readFile = readFile;
-exports.writeFile = writeFile;
-exports.weiToEth = weiToEth;
-exports.ethToWei = ethToWei;
-exports.loadContract = loadContract;
-exports.deployContract = deployContract;
-exports.getRandomInt = getRandomInt;
-exports.streamGitterMessages = streamGitterMessages;
-exports.getGitterMessages = getGitterMessages;
-exports.postGitterMessage = postGitterMessage;
+/* eslint-enable */
+module.exports = utility;
