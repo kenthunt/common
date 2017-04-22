@@ -346,54 +346,59 @@ module.exports = (config) => {
           sha3(`${functionName}(${typeName})`).slice(0, 8)
           }${coder.encodeParams(inputTypes, args)}`;
       }
-      const tx = new Tx(options);
-      function proxy() {
-        utility.signTx(web3, fromAddress, tx, privateKey, (errSignTx, txSigned) => {
-          if (!errSignTx) {
-            const serializedTx = txSigned.serialize().toString('hex');
-            const url = `https://${config.ethTestnet ? 'testnet' : 'api'}.etherscan.io/api`;
-            const formData = { module: 'proxy', action: 'eth_sendRawTransaction', hex: serializedTx };
-            if (config.etherscanAPIKey) formData.apikey = config.etherscanAPIKey;
-            utility.postURL(url, formData, (errPostURL, body) => {
-              if (!errPostURL) {
-                try {
-                  const result = JSON.parse(body);
-                  if (result.result) {
-                    callback(undefined, { txHash: result.result, nonce: nonce + 1 });
-                  } else if (result.error) {
-                    callback(result.error.message, { txHash: undefined, nonce });
+      let tx;
+      try {
+        tx = new Tx(options);
+        function proxy() { // eslint-disable-line no-inner-declarations
+          utility.signTx(web3, fromAddress, tx, privateKey, (errSignTx, txSigned) => {
+            if (!errSignTx) {
+              const serializedTx = txSigned.serialize().toString('hex');
+              const url = `https://${config.ethTestnet ? 'testnet' : 'api'}.etherscan.io/api`;
+              const formData = { module: 'proxy', action: 'eth_sendRawTransaction', hex: serializedTx };
+              if (config.etherscanAPIKey) formData.apikey = config.etherscanAPIKey;
+              utility.postURL(url, formData, (errPostURL, body) => {
+                if (!errPostURL) {
+                  try {
+                    const result = JSON.parse(body);
+                    if (result.result) {
+                      callback(undefined, { txHash: result.result, nonce: nonce + 1 });
+                    } else if (result.error) {
+                      callback(result.error.message, { txHash: undefined, nonce });
+                    }
+                  } catch (errTry) {
+                    callback(errTry, { txHash: undefined, nonce });
                   }
-                } catch (errTry) {
-                  callback(errTry, { txHash: undefined, nonce });
+                } else {
+                  callback(err, { txHash: undefined, nonce });
                 }
+              });
+            } else {
+              console.log(err);
+              callback('Failed to sign transaction', { txHash: undefined, nonce });
+            }
+          });
+        }
+        try {
+          if (web3.currentProvider) {
+            options.from = fromAddress;
+            options.gas = options.gasLimit;
+            delete options.gasLimit;
+            web3.eth.sendTransaction(options, (errSend, hash) => {
+              if (!errSend) {
+                callback(undefined, { txHash: hash, nonce: nonce + 1 });
               } else {
-                callback(err, { txHash: undefined, nonce });
+                console.log(err);
+                proxy();
               }
             });
           } else {
-            console.log(err);
-            callback('Failed to sign transaction', { txHash: undefined, nonce });
+            proxy();
           }
-        });
-      }
-      try {
-        if (web3.currentProvider) {
-          options.from = fromAddress;
-          options.gas = options.gasLimit;
-          delete options.gasLimit;
-          web3.eth.sendTransaction(options, (errSend, hash) => {
-            if (!errSend) {
-              callback(undefined, { txHash: hash, nonce: nonce + 1 });
-            } else {
-              console.log(err);
-              proxy();
-            }
-          });
-        } else {
+        } catch (errSend) {
           proxy();
         }
-      } catch (errSend) {
-        proxy();
+      } catch (errCatch) {
+        callback(errCatch, { txHash: undefined, nonce });
       }
     });
   };
