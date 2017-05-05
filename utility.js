@@ -140,7 +140,7 @@ module.exports = (config) => {
     function proxy() {
       let url =
         `https://${
-        config.ethTestnet ? 'testnet' : 'api'
+        config.ethTestnet ? config.ethTestnet : 'api'
         }.etherscan.io/api?module=proxy&action=eth_GetTransactionCount&address=${
         address
         }&tag=latest`;
@@ -197,7 +197,7 @@ module.exports = (config) => {
       const data = contract[functionName].getData.apply(null, args);
       let url =
         `https://${
-        config.ethTestnet ? 'testnet' : 'api'
+        config.ethTestnet ? config.ethTestnet : 'api'
         }.etherscan.io/api?module=proxy&action=eth_Call&to=${
         address
         }&data=${
@@ -353,7 +353,7 @@ module.exports = (config) => {
           utility.signTx(web3, fromAddress, tx, privateKey, (errSignTx, txSigned) => {
             if (!errSignTx) {
               const serializedTx = txSigned.serialize().toString('hex');
-              const url = `https://${config.ethTestnet ? 'testnet' : 'api'}.etherscan.io/api`;
+              const url = `https://${config.ethTestnet ? config.ethTestnet : 'api'}.etherscan.io/api`;
               const formData = { module: 'proxy', action: 'eth_sendRawTransaction', hex: serializedTx };
               if (config.etherscanAPIKey) formData.apikey = config.etherscanAPIKey;
               utility.postURL(url, formData, (errPostURL, body) => {
@@ -470,7 +470,7 @@ module.exports = (config) => {
     function proxy() {
       let url =
         `https://${
-        config.ethTestnet ? 'testnet' : 'api'
+        config.ethTestnet ? config.ethTestnet : 'api'
         }.etherscan.io/api?module=proxy&action=eth_GetTransactionReceipt&txhash=${
         txHash}`;
       if (config.etherscanAPIKey) url += `&apikey=${config.etherscanAPIKey}`;
@@ -528,7 +528,7 @@ module.exports = (config) => {
     function proxy(retries) {
       let url =
         `https://${
-        config.ethTestnet ? 'testnet' : 'api'
+        config.ethTestnet ? config.ethTestnet : 'api'
         }.etherscan.io/api?module=logs&action=getLogs&address=${
         address
         }&fromBlock=${
@@ -595,7 +595,7 @@ module.exports = (config) => {
     function proxy(retries) {
       let url =
         `https://${
-        config.ethTestnet ? 'testnet' : 'api'
+        config.ethTestnet ? config.ethTestnet : 'api'
         }.etherscan.io/api?module=logs&action=getLogs&address=${
         address
         }&fromBlock=${
@@ -644,7 +644,7 @@ module.exports = (config) => {
     function proxy() {
       let url =
         `https://${
-        config.ethTestnet ? 'testnet' : 'api'
+        config.ethTestnet ? config.ethTestnet : 'api'
         }.etherscan.io/api?module=account&action=balance&address=${
         address
         }&tag=latest`;
@@ -679,7 +679,7 @@ module.exports = (config) => {
     function proxy() {
       let url =
         `https://${
-        config.ethTestnet ? 'testnet' : 'api'
+        config.ethTestnet ? config.ethTestnet : 'api'
         }.etherscan.io/api?module=proxy&action=eth_getCode&address=${
         address
         }&tag=latest`;
@@ -714,7 +714,7 @@ module.exports = (config) => {
     function proxy() {
       let url =
         `https://${
-        config.ethTestnet ? 'testnet' : 'api'
+        config.ethTestnet ? config.ethTestnet : 'api'
         }.etherscan.io/api?module=proxy&action=eth_BlockNumber`;
       if (config.etherscanAPIKey) url += `&apikey=${config.etherscanAPIKey}`;
       utility.getURL(url, (err, body) => {
